@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futucation — Sign In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#03040a; --panel:#0a0d1c; --panel2:#0d1226; --text:#eef0ff; --muted:#8b93b8;
+  --cyan:#00f0ff; --violet:#9b6bff; --magenta:#ff2fd0; --bio:#39ff9d;
+  --line: rgba(155,107,255,0.22); --line-bright: rgba(0,240,255,0.55);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; position:relative; }
+.mono{font-family:'JetBrains Mono',monospace;} .display{font-family:'Space Grotesk',sans-serif;}
+
+#particleCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+.orb{ position:fixed; border-radius:50%; filter:blur(70px); pointer-events:none; z-index:0; opacity:0.45; mix-blend-mode:screen; }
+.orb1{ width:50vw; height:50vw; background:radial-gradient(circle, var(--violet), transparent 70%); top:-15%; left:-15%; animation:drift1 24s ease-in-out infinite; }
+.orb2{ width:40vw; height:40vw; background:radial-gradient(circle, var(--cyan), transparent 70%); bottom:-15%; right:-15%; animation:drift2 28s ease-in-out infinite; }
+@keyframes drift1{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(6vw,7vh);} }
+@keyframes drift2{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(-6vw,-5vh);} }
+
+.wrap{ position:relative; z-index:2; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 5vw; }
+.card{
+  width:100%; max-width:420px; background:linear-gradient(160deg, var(--panel), var(--panel2));
+  border:1px solid rgba(155,107,255,0.2); border-radius:20px; padding:44px 38px; position:relative; overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,0.5);
+}
+.card::after{
+  content:""; position:absolute; inset:0; border-radius:20px; padding:1px;
+  background:linear-gradient(135deg, rgba(0,240,255,0.3), transparent 40%, rgba(155,107,255,0.25));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none;
+}
+.logo{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.06em; margin-bottom:34px; }
+.logo-mark{ width:10px; height:10px; border-radius:50%; background:var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 28px var(--cyan); animation:pulseMark 2.2s ease-in-out infinite; }
+@keyframes pulseMark{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.5; transform:scale(0.7);} }
+h1{ font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:600; margin-bottom:6px; }
+.sub{ color:var(--muted); font-size:0.88rem; margin-bottom:30px; }
+.tabs{ display:flex; gap:6px; background:rgba(255,255,255,0.04); border-radius:10px; padding:4px; margin-bottom:26px; }
+.tab{ flex:1; text-align:center; padding:9px 0; border-radius:8px; font-size:0.84rem; color:var(--muted); cursor:pointer; transition:all .25s; }
+.tab.active{ background:rgba(0,240,255,0.12); color:var(--cyan); }
+label{ font-size:0.78rem; color:var(--muted); display:block; margin-bottom:7px; font-family:'JetBrains Mono',monospace; }
+.field{ margin-bottom:18px; }
+input{
+  width:100%; padding:13px 14px; border-radius:10px; border:1px solid rgba(155,107,255,0.25);
+  background:rgba(255,255,255,0.03); color:var(--text); font-size:0.92rem; outline:none; transition:border-color .25s, box-shadow .25s;
+}
+input:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,240,255,0.1); }
+#nameField{ display:none; }
+.submit-btn{
+  width:100%; padding:14px 0; border-radius:10px; border:none; background:var(--text); color:#070a14;
+  font-weight:600; font-size:0.92rem; cursor:pointer; margin-top:8px; position:relative; overflow:hidden; isolation:isolate;
+}
+.submit-btn::before{ content:""; position:absolute; inset:0; background:linear-gradient(120deg,var(--cyan),var(--violet),var(--magenta)); opacity:0; transition:opacity .3s; z-index:-1; }
+.submit-btn:hover::before{ opacity:1; } .submit-btn:hover{ color:#03040a; }
+.submit-btn:disabled{ opacity:0.6; cursor:not-allowed; }
+.msg{ font-size:0.82rem; margin-top:16px; text-align:center; min-height:18px; }
+.msg.error{ color:#ff6b81; } .msg.success{ color:var(--bio); }
+.foot-link{ text-align:center; margin-top:24px; font-size:0.82rem; color:var(--muted); }
+.foot-link a{ color:var(--cyan); text-decoration:none; cursor:pointer; }
+.page-footer{ position:fixed; bottom:0; left:0; right:0; text-align:center; padding:14px 0; font-size:0.7rem; color:var(--muted); font-family:'JetBrains Mono',monospace; z-index:2; opacity:0.75; }
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="wrap">
+  <div class="card">
+    <div class="logo"><span class="logo-mark"></span>FUTUCATION</div>
+    <h1 class="display" id="formTitle">Welcome back</h1>
+    <p class="sub" id="formSub">Sign in to continue your discipline path.</p>
+
+    <div class="tabs">
+      <div class="tab active" id="tabLogin" onclick="setMode('login')">Sign In</div>
+      <div class="tab" id="tabRegister" onclick="setMode('register')">Create Account</div>
+    </div>
+
+    <form id="authForm" onsubmit="return handleSubmit(event)">
+      <div class="field" id="nameField">
+        <label>FULL NAME</label>
+        <input type="text" id="fullName" placeholder="Zara Adekunle">
+      </div>
+      <div class="field">
+        <label>EMAIL</label>
+        <input type="email" id="email" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label>PASSWORD</label>
+        <input type="password" id="password" placeholder="••••••••" required minlength="6">
+      </div>
+      <button class="submit-btn" id="submitBtn" type="submit">Sign In →</button>
+      <div class="msg" id="formMsg"></div>
+    </form>
+
+    <div class="foot-link" id="switchHint">
+      New to Futucation? <a onclick="setMode('register')">Create an account</a>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer mono">© Futucation by Pison Education and Training Services Limited. All Rights Reserved.</div>
+
+<script>
+// ===== Talks to our own FastAPI backend — no third-party auth platform =====
+const API_BASE = ''; // same origin — backend serves this page too
+
+let mode = 'login';
+function setMode(m){
+  mode = m;
+  document.getElementById('tabLogin').classList.toggle('active', m==='login');
+  document.getElementById('tabRegister').classList.toggle('active', m==='register');
+  document.getElementById('nameField').style.display = m==='register' ? 'block' : 'none';
+  document.getElementById('formTitle').textContent = m==='login' ? 'Welcome back' : 'Begin your path';
+  document.getElementById('formSub').textContent = m==='login' ? 'Sign in to continue your discipline path.' : 'Create an account to start Tier 1 — Explorer.';
+  document.getElementById('submitBtn').textContent = m==='login' ? 'Sign In →' : 'Create Account →';
+  document.getElementById('switchHint').innerHTML = m==='login'
+    ? 'New to Futucation? <a onclick="setMode(\'register\')">Create an account</a>'
+    : 'Already have an account? <a onclick="setMode(\'login\')">Sign in</a>';
+  document.getElementById('formMsg').textContent = '';
+}
+
+async function handleSubmit(e){
+  e.preventDefault();
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('formMsg');
+  msg.className = 'msg'; msg.textContent = '';
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const fullName = document.getElementById('fullName').value.trim();
+
+  btn.disabled = true; btn.textContent = 'Please wait…';
+
+  try{
+    if(mode === 'register'){
+      const res = await fetch(API_BASE + '/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: fullName || email.split('@')[0], email, password })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.detail || 'Could not create account.');
+      localStorage.setItem('futucation_token', data.token);
+      localStorage.setItem('futucation_user', JSON.stringify(data.user));
+      window.location.href = '/app';
+    } else {
+      const res = await fetch(API_BASE + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.detail || 'Wrong email or password.');
+      localStorage.setItem('futucation_token', data.token);
+      localStorage.setItem('futucation_user', JSON.stringify(data.user));
+      window.location.href = '/app';
+    }
+  } catch(err){
+    msg.className = 'msg error';
+    msg.textContent = err.message || 'Something went wrong. Try again.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = mode==='login' ? 'Sign In →' : 'Create Account →';
+  }
+}
+
+// redirect if already logged in
+if(localStorage.getItem('futucation_token')) window.location.href = '/app';
+
+// ===== background particles (lightweight) =====
+const canvas = document.getElementById('particleCanvas'), ctx = canvas.getContext('2d');
+let pw,ph,particles=[];
+function resize(){ pw=canvas.width=innerWidth; ph=canvas.height=innerHeight; }
+resize(); window.addEventListener('resize', resize);
+for(let i=0;i<45;i++) particles.push({x:Math.random()*pw,y:Math.random()*ph,vx:(Math.random()-0.5)*0.25,vy:(Math.random()-0.5)*0.25});
+function tick(){
+  ctx.clearRect(0,0,pw,ph);
+  particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>pw)p.vx*=-1; if(p.y<0||p.y>ph)p.vy*=-1; });
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const a=particles[i],b=particles[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<130){ ctx.strokeStyle=`rgba(0,240,255,${0.1*(1-d/130)})`; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    }
+    ctx.fillStyle='rgba(155,107,255,0.5)'; ctx.beginPath(); ctx.arc(particles[i].x,particles[i].y,1.5,0,Math.PI*2); ctx.fill();
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>

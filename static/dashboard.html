@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futucation — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#03040a; --panel:#0a0d1c; --panel2:#0d1226; --text:#eef0ff; --muted:#8b93b8;
+  --cyan:#00f0ff; --violet:#9b6bff; --magenta:#ff2fd0; --bio:#39ff9d; --gold:#ffcb47;
+  --line: rgba(155,107,255,0.22); --line-bright: rgba(0,240,255,0.55);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; }
+.mono{font-family:'JetBrains Mono',monospace;} .display{font-family:'Space Grotesk',sans-serif;}
+
+#particleCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.6; }
+.orb{ position:fixed; border-radius:50%; filter:blur(80px); pointer-events:none; z-index:0; opacity:0.3; mix-blend-mode:screen; }
+.orb1{ width:44vw; height:44vw; background:radial-gradient(circle, var(--violet), transparent 70%); top:-15%; left:20%; animation:drift1 26s ease-in-out infinite; }
+.orb2{ width:36vw; height:36vw; background:radial-gradient(circle, var(--cyan), transparent 70%); bottom:-10%; right:-10%; animation:drift2 30s ease-in-out infinite; }
+@keyframes drift1{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(5vw,6vh);} }
+@keyframes drift2{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(-5vw,-5vh);} }
+
+/* ===== LAYOUT ===== */
+.app{ position:relative; z-index:2; display:flex; min-height:100vh; }
+.sidebar{
+  width:260px; flex-shrink:0; background:rgba(10,13,28,0.7); backdrop-filter:blur(14px);
+  border-right:1px solid rgba(155,107,255,0.15); display:flex; flex-direction:column; padding:26px 18px;
+  position:sticky; top:0; height:100vh;
+}
+.logo{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.06em; font-size:0.95rem; padding:0 8px 28px; }
+.logo-mark{ width:10px; height:10px; border-radius:50%; background:var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 28px var(--cyan); animation:pulseMark 2.2s ease-in-out infinite; }
+@keyframes pulseMark{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:0.5; transform:scale(0.7);} }
+.nav-group{ margin-bottom:22px; }
+.nav-label{ font-family:'JetBrains Mono',monospace; font-size:0.65rem; letter-spacing:0.12em; color:var(--muted); text-transform:uppercase; padding:0 10px; margin-bottom:8px; opacity:0.7; }
+.nav-item{
+  display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; color:var(--muted);
+  font-size:0.87rem; cursor:pointer; transition:all .2s; margin-bottom:3px; position:relative;
+}
+.nav-item:hover{ background:rgba(255,255,255,0.04); color:var(--text); }
+.nav-item.active{ background:rgba(0,240,255,0.1); color:var(--cyan); }
+.nav-item.active::before{ content:""; position:absolute; left:-18px; top:50%; transform:translateY(-50%); width:3px; height:18px; background:var(--cyan); border-radius:3px; box-shadow:0 0 8px var(--cyan); }
+.nav-dot{ width:6px; height:6px; border-radius:50%; background:currentColor; opacity:0.6; flex-shrink:0; }
+.sidebar-bottom{ margin-top:auto; }
+.user-chip{ display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; background:rgba(255,255,255,0.03); margin-bottom:8px; }
+.user-avatar{ width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),var(--violet)); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:0.8rem; color:#03040a; flex-shrink:0; }
+.user-info{ overflow:hidden; }
+.user-name{ font-size:0.82rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-tier{ font-size:0.68rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+.signout-btn{ width:100%; padding:9px 0; border-radius:9px; border:1px solid var(--line); background:transparent; color:var(--muted); font-size:0.8rem; cursor:pointer; transition:all .2s; }
+.signout-btn:hover{ border-color:#ff6b81; color:#ff6b81; }
+
+.main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.topbar{ display:flex; align-items:center; justify-content:space-between; padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.page-title{ font-family:'Space Grotesk',sans-serif; font-size:1.3rem; font-weight:600; }
+.xp-pill{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--bio); border:1px solid rgba(57,255,157,0.3); padding:7px 14px; border-radius:100px; background:rgba(57,255,157,0.06); }
+.content{ flex:1; padding:36px; }
+.view{ display:none; } .view.active{ display:block; animation:fadeIn .5s ease; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+footer.app-footer{ padding:18px 36px; text-align:center; border-top:1px solid rgba(255,255,255,0.05); }
+.footer-copyright{ color:var(--muted); font-size:0.72rem; font-family:'JetBrains Mono',monospace; opacity:0.8; }
+
+/* ===== OVERVIEW ===== */
+.overview-grid{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:24px; }
+.card{ background:linear-gradient(160deg, var(--panel), var(--panel2)); border:1px solid rgba(155,107,255,0.16); border-radius:18px; padding:28px; position:relative; overflow:hidden; }
+.card::after{ content:""; position:absolute; inset:0; border-radius:18px; padding:1px; background:linear-gradient(135deg, rgba(0,240,255,0.25), transparent 40%, rgba(155,107,255,0.2)); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
+.welcome-line{ font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:600; margin-bottom:8px; }
+.welcome-sub{ color:var(--muted); font-size:0.92rem; margin-bottom:24px; }
+.progress-row{ display:flex; gap:16px; margin-top:10px; }
+.mini-stat{ flex:1; }
+.mini-stat-num{ font-family:'Space Grotesk',sans-serif; font-size:1.6rem; font-weight:700; color:var(--cyan); }
+.mini-stat-label{ font-size:0.75rem; color:var(--muted); margin-top:2px; }
+
+/* radar (overview) */
+.radar-wrap{ position:relative; width:100%; aspect-ratio:1/1; max-width:280px; margin:0 auto; }
+.ring{ position:absolute; border-radius:50%; border:1px solid var(--line); top:50%; left:50%; transform:translate(-50%,-50%); }
+.ring1{width:30%;height:30%;} .ring2{width:60%;height:60%;} .ring3{width:90%;height:90%;}
+.spin{ animation:spin linear infinite; } .spin-rev{ animation:spinRev linear infinite; }
+@keyframes spin{ from{transform:translate(-50%,-50%) rotate(0deg);} to{transform:translate(-50%,-50%) rotate(360deg);} }
+@keyframes spinRev{ from{transform:translate(-50%,-50%) rotate(360deg);} to{transform:translate(-50%,-50%) rotate(0deg);} }
+.core{ position:absolute; top:50%; left:50%; width:50px; height:50px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle at 35% 30%, #1a2440, #060914 70%); border:1px solid var(--line-bright); box-shadow:0 0 30px rgba(0,240,255,0.25); display:flex; align-items:center; justify-content:center; font-size:0.45rem; color:var(--cyan); text-align:center; font-family:'JetBrains Mono',monospace; }
+.node{ position:absolute; transform:translate(-50%,-50%); }
+.node-dot{ width:8px; height:8px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan); animation:nodePulse 3s ease-in-out infinite; }
+.node.bio .node-dot{ background:var(--bio); box-shadow:0 0 10px var(--bio); }
+.node.violet .node-dot{ background:var(--violet); box-shadow:0 0 10px var(--violet); }
+@keyframes nodePulse{ 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+/* tier cards */
+.tier-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:20px; margin-top:24px; }
+.tier-card{ cursor:pointer; transition:transform .2s; }
+.tier-card:hover{ transform:translateY(-3px); }
+.tier-card-age{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--muted); margin-bottom:6px; }
+.tier-card-name{ font-family:'Space Grotesk',sans-serif; font-size:1.2rem; font-weight:600; margin-bottom:8px; }
+.tier-card-desc{ font-size:0.83rem; color:var(--muted); line-height:1.5; }
+.tier-bar{ height:4px; border-radius:4px; background:rgba(255,255,255,0.08); margin-top:14px; overflow:hidden; }
+.tier-bar-fill{ height:100%; border-radius:4px; background:linear-gradient(90deg,var(--cyan),var(--violet)); }
+
+/* tier detail page */
+.tier-feats{ display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+.tier-feat{ font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--text); border:1px solid var(--line); padding:6px 13px; border-radius:100px; background:rgba(155,107,255,0.06); }
+.sprint-btn{ margin-top:26px; padding:13px 26px; border-radius:10px; border:none; background:var(--text); color:#070a14; font-weight:600; font-size:0.88rem; cursor:pointer; }
+
+/* curriculum layers */
+.layer-list{ display:flex; flex-direction:column; gap:14px; margin-top:24px; }
+.layer-item{ background:linear-gradient(160deg, var(--panel), var(--panel2)); border:1px solid rgba(155,107,255,0.15); border-radius:14px; padding:20px 22px; cursor:pointer; }
+.layer-head{ display:flex; align-items:center; justify-content:space-between; }
+.layer-name{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.02rem; }
+.layer-meta{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--muted); }
+.layer-body{ display:none; margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06); color:var(--muted); font-size:0.88rem; line-height:1.65; }
+.layer-item.open .layer-body{ display:block; }
+.layer-body b{ color:var(--text); }
+.vocab-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.vocab-chip{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--bio); border:1px solid rgba(57,255,157,0.25); padding:4px 10px; border-radius:100px; background:rgba(57,255,157,0.05); }
+
+/* convergence lab */
+.lab-grid{ display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; margin-top:20px; }
+.chip-row{ display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+.chip{ font-family:'JetBrains Mono',monospace; font-size:0.76rem; padding:10px 15px; border-radius:100px; border:1px solid var(--line); color:var(--muted); cursor:pointer; transition:all .2s; background:transparent; }
+.chip:hover{ border-color:var(--line-bright); color:var(--text); }
+.chip.selected{ background:rgba(0,240,255,0.1); border-color:var(--cyan); color:var(--cyan); }
+.lab-result{ margin-top:20px; font-size:0.88rem; color:var(--muted); line-height:1.6; border-left:2px solid var(--line); padding-left:14px; }
+.lab-result.active{ color:var(--text); border-color:var(--bio); }
+.lab-stage{ position:relative; aspect-ratio:1/0.8; }
+.lab-canvas{ position:relative; width:100%; height:100%; }
+.lab-node{ position:absolute; width:60px; height:60px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:0.58rem; text-align:center; color:var(--muted); background:rgba(3,4,10,0.5); transition:all .3s; transform:translate(-50%,-50%); }
+.lab-node.lit{ border-color:var(--cyan); color:var(--cyan); box-shadow:0 0 16px rgba(0,240,255,0.3); }
+.lab-svg{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.lab-beam{ stroke:var(--cyan); stroke-width:2; opacity:0; transition:opacity .5s; }
+.lab-beam.on{ opacity:0.85; }
+
+/* profile */
+.profile-row{ display:flex; gap:20px; align-items:center; margin-bottom:30px; }
+.profile-avatar{ width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),var(--violet)); display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:700; color:#03040a; }
+.field{ margin-bottom:16px; max-width:420px; }
+label{ font-size:0.75rem; color:var(--muted); display:block; margin-bottom:6px; font-family:'JetBrains Mono',monospace; }
+input{ width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(155,107,255,0.25); background:rgba(255,255,255,0.03); color:var(--text); font-size:0.9rem; outline:none; }
+input:focus{ border-color:var(--cyan); }
+.save-btn{ padding:12px 24px; border-radius:10px; border:none; background:var(--text); color:#070a14; font-weight:600; font-size:0.85rem; cursor:pointer; margin-top:6px; }
+
+@media (max-width:880px){
+  .sidebar{ position:fixed; left:-280px; transition:left .3s; z-index:100; }
+  .sidebar.open{ left:0; }
+  .overview-grid, .tier-grid, .lab-grid{ grid-template-columns:1fr; }
+  .content{ padding:24px 18px; } .topbar{ padding:18px 18px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="logo"><span class="logo-mark"></span>FUTUCATION</div>
+
+    <div class="nav-group">
+      <div class="nav-label">Home</div>
+      <div class="nav-item active" data-view="overview"><span class="nav-dot"></span>Overview</div>
+      <div class="nav-item" data-view="lab"><span class="nav-dot"></span>Convergence Lab</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Your Path</div>
+      <div class="nav-item" data-view="explorer"><span class="nav-dot"></span>Explorer · 5–12</div>
+      <div class="nav-item" data-view="navigator"><span class="nav-dot"></span>Navigator · 13–18</div>
+      <div class="nav-item" data-view="pioneer"><span class="nav-dot"></span>Pioneer · 19–35</div>
+      <div class="nav-item" data-view="sage"><span class="nav-dot"></span>Sage · 35+</div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Sample Discipline</div>
+      <div class="nav-item" data-view="curriculum"><span class="nav-dot"></span>Synthetic Biology</div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="nav-item" data-view="profile" style="margin-bottom:14px;"><span class="nav-dot"></span>My Profile</div>
+      <div class="user-chip">
+        <div class="user-avatar" id="sideAvatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="sideName">Loading…</div>
+          <div class="user-tier">Tier 1 · Explorer</div>
+        </div>
+      </div>
+      <button class="signout-btn" onclick="signOut()">Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title display" id="pageTitle">Overview</div>
+      <div class="xp-pill">⚡ <span id="xpCount">0</span> XP</div>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <div class="view active" id="view-overview">
+        <div class="overview-grid">
+          <div class="card">
+            <div class="welcome-line display" id="welcomeLine">Welcome back.</div>
+            <div class="welcome-sub">Your discipline path is open. Pick up where you left off, or explore something new.</div>
+            <div class="progress-row">
+              <div class="mini-stat"><div class="mini-stat-num">1</div><div class="mini-stat-label">Active Tier</div></div>
+              <div class="mini-stat"><div class="mini-stat-num">1/30</div><div class="mini-stat-label">Disciplines Started</div></div>
+              <div class="mini-stat"><div class="mini-stat-num">0</div><div class="mini-stat-label">Credentials Earned</div></div>
+            </div>
+            <div class="tier-grid">
+              <div class="card tier-card" onclick="showView('explorer')"><div class="tier-card-age mono">5–12 · EXPLORER</div><div class="tier-card-name display">Spark curiosity</div><div class="tier-card-desc">Animated worlds & gamified quests.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:35%"></div></div></div>
+              <div class="card tier-card" onclick="showView('navigator')"><div class="tier-card-age mono">13–18 · NAVIGATOR</div><div class="tier-card-name display">Chart direction</div><div class="tier-card-desc">Discipline sprints & mentor match.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:0%"></div></div></div>
+              <div class="card tier-card" onclick="showView('pioneer')"><div class="tier-card-age mono">19–35 · PIONEER</div><div class="tier-card-name display">Lead change</div><div class="tier-card-desc">Deep tracks & Convergence Certs.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:0%"></div></div></div>
+              <div class="card tier-card" onclick="showView('sage')"><div class="tier-card-age mono">35+ · SAGE</div><div class="tier-card-name display">Transfer wisdom</div><div class="tier-card-desc">Reskill intensives & mentorship.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:0%"></div></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="welcome-sub mono" style="margin-bottom:6px;">DISCIPLINE RADAR</div>
+            <div class="radar-wrap" id="radarWrap">
+              <div class="ring ring3 spin-rev" style="animation-duration:50s;"></div>
+              <div class="ring ring2 spin" style="animation-duration:32s;"></div>
+              <div class="ring ring1 spin-rev" style="animation-duration:20s;"></div>
+              <svg class="radar-svg" id="radarSvg" style="position:absolute;inset:0;width:100%;height:100%;"></svg>
+              <div class="core mono">RADAR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIER VIEWS -->
+      <div class="view" id="view-explorer">
+        <div class="card"><div class="tier-card-age mono">AGES 5–12 · EXPLORER</div><div class="welcome-line display">Spark curiosity through play</div><p class="welcome-sub">A glowing bacteria, a quantum coin that's heads and tails — emerging science enters as a story, not a syllabus.</p>
+        <div class="tier-feats"><span class="tier-feat">Animated worlds</span><span class="tier-feat">Gamified quests</span><span class="tier-feat">Character guides</span></div>
+        <button class="sprint-btn" onclick="showView('curriculum')">Start a Discipline Quest →</button></div>
+      </div>
+      <div class="view" id="view-navigator">
+        <div class="card"><div class="tier-card-age mono">AGES 13–18 · NAVIGATOR</div><div class="welcome-line display">Chart direction through real problems</div><p class="welcome-sub">Drag guide RNA to a target strand. Debate the human germline. Mentor-matched into a field that's still being invented.</p>
+        <div class="tier-feats"><span class="tier-feat">Discipline sprints</span><span class="tier-feat">Cross-discipline labs</span><span class="tier-feat">Mentor match</span></div>
+        <button class="sprint-btn" onclick="showView('curriculum')">Start a Discipline Sprint →</button></div>
+      </div>
+      <div class="view" id="view-pioneer">
+        <div class="card"><div class="tier-card-age mono">AGES 19–35 · PIONEER</div><div class="welcome-line display">Lead change with certified expertise</div><p class="welcome-sub">A four-week sprint, a real brief, a documented prototype — endorsed by a practitioner, certified on-chain.</p>
+        <div class="tier-feats"><span class="tier-feat">Deep tracks</span><span class="tier-feat">Convergence Certs</span><span class="tier-feat">Venture Lab</span></div>
+        <button class="sprint-btn" onclick="showView('curriculum')">Browse Venture Briefs →</button></div>
+      </div>
+      <div class="view" id="view-sage">
+        <div class="card"><div class="tier-card-age mono">AGES 35+ · SAGE</div><div class="welcome-line display">Transfer wisdom, reskill, mentor</div><p class="welcome-sub">Decades of judgment, redirected toward fields that didn't exist when your career started.</p>
+        <div class="tier-feats"><span class="tier-feat">Reskill intensives</span><span class="tier-feat">Sage mentor programme</span><span class="tier-feat">Briefings</span></div>
+        <button class="sprint-btn" onclick="showView('curriculum')">Browse Reskill Intensives →</button></div>
+      </div>
+
+      <!-- CURRICULUM -->
+      <div class="view" id="view-curriculum">
+        <div class="card">
+          <div class="welcome-line display">Synthetic Biology & Biodesign</div>
+          <p class="welcome-sub">Five layers, one discipline — from "why it exists" to "what it costs." Tap a layer to open it.</p>
+          <div class="layer-list" id="layerList"></div>
+        </div>
+      </div>
+
+      <!-- CONVERGENCE LAB -->
+      <div class="view" id="view-lab">
+        <div class="card">
+          <div class="welcome-line display">Cross-Discipline Convergence Lab</div>
+          <p class="welcome-sub">No real problem fits in one discipline. Pick two and see what emerges.</p>
+          <div class="lab-grid">
+            <div>
+              <div class="chip-row" id="chipRow"></div>
+              <div class="lab-result mono" id="labResult">Select two disciplines to discover a convergence path.</div>
+            </div>
+            <div class="lab-stage"><div class="lab-canvas" id="labCanvas"><svg class="lab-svg" id="labSvg"></svg></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="view" id="view-profile">
+        <div class="card" style="max-width:520px;">
+          <div class="profile-row">
+            <div class="profile-avatar" id="profAvatar">?</div>
+            <div><div class="welcome-line display" id="profName" style="font-size:1.2rem;">Loading…</div><div class="welcome-sub" style="margin-bottom:0;" id="profEmail"></div></div>
+          </div>
+          <div class="field"><label>FULL NAME</label><input type="text" id="editName"></div>
+          <button class="save-btn" onclick="saveProfile()">Save Changes</button>
+          <div class="msg mono" id="profMsg" style="margin-top:14px; font-size:0.8rem; color:var(--bio);"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="app-footer">
+      <div class="footer-copyright">© Futucation by Pison Education and Training Services Limited. All Rights Reserved.</div>
+    </footer>
+  </div>
+</div>
+
+<script>
+<script>
+// ===== Talks to our own FastAPI backend — no third-party auth platform =====
+const API_BASE = ''; // same origin
+let currentUser = null;
+
+function authHeaders(){
+  const token = localStorage.getItem('futucation_token');
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+}
+
+async function init(){
+  const token = localStorage.getItem('futucation_token');
+  if(!token){ window.location.href = '/'; return; }
+
+  try{
+    const res = await fetch(API_BASE + '/auth/me', { headers: authHeaders() });
+    if(!res.ok){ localStorage.removeItem('futucation_token'); window.location.href = '/'; return; }
+    currentUser = await res.json();
+  } catch(e){ window.location.href = '/'; return; }
+
+  const name = currentUser.full_name || currentUser.email.split('@')[0];
+  document.getElementById('sideName').textContent = name;
+  document.getElementById('sideAvatar').textContent = name[0].toUpperCase();
+  document.getElementById('welcomeLine').textContent = 'Welcome back, ' + name.split(' ')[0] + '.';
+  document.getElementById('profName').textContent = name;
+  document.getElementById('profEmail').textContent = currentUser.email;
+  document.getElementById('profAvatar').textContent = name[0].toUpperCase();
+  document.getElementById('editName').value = name;
+  document.getElementById('xpCount').textContent = currentUser.xp_points || 0;
+}
+init();
+
+function signOut(){
+  localStorage.removeItem('futucation_token');
+  localStorage.removeItem('futucation_user');
+  window.location.href = '/';
+}
+
+async function saveProfile(){
+  const newName = document.getElementById('editName').value.trim();
+  const msg = document.getElementById('profMsg');
+  try{
+    const res = await fetch(API_BASE + '/auth/me', {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ full_name: newName })
+    });
+    if(!res.ok) throw new Error();
+    msg.textContent = 'Saved.';
+    document.getElementById('sideName').textContent = newName;
+    document.getElementById('profName').textContent = newName;
+  }catch(e){ msg.textContent = 'Could not save. Try again.'; }
+}
+
+// ===== NAV / VIEW SWITCHING =====
+const titles = { overview:'Overview', explorer:'Explorer · Ages 5–12', navigator:'Navigator · Ages 13–18', pioneer:'Pioneer · Ages 19–35', sage:'Sage · Ages 35+', curriculum:'Synthetic Biology & Biodesign', lab:'Convergence Lab', profile:'My Profile' };
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===name));
+  document.getElementById('pageTitle').textContent = titles[name] || name;
+  document.getElementById('sidebar').classList.remove('open');
+}
+document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
+  item.addEventListener('click', ()=> showView(item.dataset.view));
+});
+
+// ===== RADAR (overview, small) =====
+const disciplines = [ {label:'AI Safety', ring:2, angle:30, cls:'violet'}, {label:'Synthetic Bio', ring:3, angle:110, cls:'bio'}, {label:'Quantum', ring:2, angle:210, cls:''}, {label:'Climate Eng.', ring:3, angle:290, cls:'bio'} ];
+const radarWrap = document.getElementById('radarWrap'), radarSvg = document.getElementById('radarSvg');
+const ringPct = {2:0.6, 3:0.9};
+function placeNodes(){
+  const w = radarWrap.clientWidth, h = radarWrap.clientHeight, cx=w/2, cy=h/2;
+  radarWrap.querySelectorAll('.node').forEach(n=>n.remove());
+  disciplines.forEach(d=>{
+    const r=(ringPct[d.ring]*w)/2, rad=d.angle*Math.PI/180;
+    const x=cx+r*Math.cos(rad), y=cy+r*Math.sin(rad);
+    const node=document.createElement('div'); node.className='node '+(d.cls||'');
+    node.style.left=x+'px'; node.style.top=y+'px';
+    node.innerHTML=`<div class="node-dot" title="${d.label}"></div>`;
+    radarWrap.appendChild(node);
+  });
+}
+placeNodes(); window.addEventListener('resize', placeNodes);
+
+// ===== CURRICULUM LAYERS =====
+const layers = [
+  {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if you could program a living cell the same way a coder writes software? DNA is essentially a code — four letters carrying instructions for building life. Synthetic biology asks: what if we wrote new instructions?<br><br><b>Activities:</b> Watch 'The Tiniest Engineers' · Explore an interactive cell map · Design your own glowing organism.", vocab:["DNA","Cell","Organism","Code","Engineer"]},
+  {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> CRISPR-Cas9 works like molecular scissors — but how do you tell the scissors where to cut? Core tools include CRISPR, DNA synthesis, and computational modelling.<br><br><b>Activities:</b> CRISPR Targeting Simulator · Case study on mRNA vaccines · Structured debate on germline editing.", vocab:["CRISPR-Cas9","Gene editing","Chassis organism","Biobrick"]},
+  {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the people building living medicines, pollution-eating bacteria, and lab-grown materials. The field is deliberately interdisciplinary.<br><br><b>Activities:</b> Practitioner profiles · Interactive global map of 15 labs and biohackerspaces · Optional mentor match.", vocab:["iGEM","Biofoundry","Biohackerspace"]},
+  {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a synthetic biology solution to a real problem in your community. Four weeks, async work, one live cohort session per week.<br><br><b>Weeks:</b> Problem definition → Solution design → Feasibility & ethics review → Pitch & peer review.", vocab:["Genetic circuit","Biosafety level","Regulatory pathway"]},
+  {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> Who decides what we're allowed to build with living systems — and who is protected when things go wrong? Covers biosecurity, dual-use risk, environmental release, and access & equity.<br><br><b>Activities:</b> Biosecurity dilemma scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Dual-use research","Biosecurity","Governance gap"]},
+];
+const layerList = document.getElementById('layerList');
+layers.forEach(l=>{
+  const div = document.createElement('div');
+  div.className = 'layer-item';
+  div.innerHTML = `<div class="layer-head"><div class="layer-name display">${l.name}</div><div class="layer-meta">${l.meta}</div></div>
+    <div class="layer-body">${l.body}<div class="vocab-row">${l.vocab.map(v=>`<span class="vocab-chip">${v}</span>`).join('')}</div></div>`;
+  div.addEventListener('click', ()=> div.classList.toggle('open'));
+  layerList.appendChild(div);
+});
+
+// ===== CONVERGENCE LAB =====
+const labDisciplines = ['AI Safety','Synthetic Bio','Quantum Comp.','Climate Eng.','Robotics','Neurotech'];
+const labLayout = [{x:0.20,y:0.18},{x:0.78,y:0.15},{x:0.50,y:0.5},{x:0.15,y:0.78},{x:0.82,y:0.78},{x:0.5,y:0.92}];
+const convergencePaths = {
+  'AI Safety|Synthetic Bio': 'Convergence found: Biosecurity AI — systems that screen synthesized DNA sequences for dual-use risk before a lab can order them.',
+  'Climate Eng.|Synthetic Bio': 'Convergence found: Engineered organisms that capture carbon or remediate soil — biodesign aimed directly at planetary repair.',
+  'AI Safety|Quantum Comp.': "Convergence found: Post-quantum cryptography — securing AI systems before quantum computers can break today's encryption.",
+  'Neurotech|AI Safety': "Convergence found: Brain-computer interface alignment — making sure neural devices act on a user's actual intent.",
+  'Robotics|Synthetic Bio': 'Convergence found: Biohybrid robotics — machines built from living tissue, blurring engineering and biology.',
+  'Climate Eng.|Quantum Comp.': "Convergence found: Quantum-accelerated climate modelling — simulating intervention scenarios too complex for classical computers.",
+};
+const chipRow=document.getElementById('chipRow'), labSvg=document.getElementById('labSvg'), labCanvasEl=document.getElementById('labCanvas'), labResult=document.getElementById('labResult');
+let selected=[], labNodes=[];
+function buildLab(){
+  chipRow.innerHTML=''; labCanvasEl.querySelectorAll('.lab-node').forEach(n=>n.remove()); labNodes=[];
+  labDisciplines.forEach((d,i)=>{
+    const chip=document.createElement('button'); chip.className='chip mono'; chip.textContent=d;
+    chip.onclick=()=>toggleSelect(d,chip); chipRow.appendChild(chip);
+    const w=labCanvasEl.clientWidth, h=labCanvasEl.clientHeight;
+    const node=document.createElement('div'); node.className='lab-node mono'; node.textContent=d;
+    node.style.left=(labLayout[i].x*w)+'px'; node.style.top=(labLayout[i].y*h)+'px';
+    labCanvasEl.appendChild(node);
+    labNodes.push({label:d, el:node, x:labLayout[i].x*w, y:labLayout[i].y*h});
+  });
+}
+function toggleSelect(d,chip){
+  if(selected.includes(d)){ selected=selected.filter(s=>s!==d); chip.classList.remove('selected'); }
+  else{
+    if(selected.length>=2){ const removed=selected.shift(); [...chipRow.children].forEach(c=>{ if(c.textContent===removed) c.classList.remove('selected'); }); }
+    selected.push(d); chip.classList.add('selected');
+  }
+  renderLab();
+}
+function renderLab(){
+  labNodes.forEach(n=> n.el.classList.toggle('lit', selected.includes(n.label)));
+  labSvg.innerHTML='';
+  if(selected.length===2){
+    const a=labNodes.find(n=>n.label===selected[0]), b=labNodes.find(n=>n.label===selected[1]);
+    const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',a.x); line.setAttribute('y1',a.y); line.setAttribute('x2',b.x); line.setAttribute('y2',b.y);
+    line.setAttribute('class','lab-beam'); labSvg.appendChild(line);
+    requestAnimationFrame(()=> line.classList.add('on'));
+    const text = convergencePaths[selected[0]+'|'+selected[1]] || convergencePaths[selected[1]+'|'+selected[0]]
+      || `Convergence found: a new cross-disciplinary path between ${selected[0]} and ${selected[1]}.`;
+    labResult.textContent=text; labResult.classList.add('active');
+  } else {
+    labResult.textContent='Select two disciplines to discover a convergence path.'; labResult.classList.remove('active');
+  }
+}
+buildLab(); window.addEventListener('resize', buildLab);
+
+// ===== BACKGROUND PARTICLES =====
+const canvas = document.getElementById('particleCanvas'), ctx = canvas.getContext('2d');
+let pw,ph,particles=[];
+function resize(){ pw=canvas.width=innerWidth; ph=canvas.height=innerHeight; }
+resize(); window.addEventListener('resize', resize);
+for(let i=0;i<40;i++) particles.push({x:Math.random()*pw,y:Math.random()*ph,vx:(Math.random()-0.5)*0.2,vy:(Math.random()-0.5)*0.2});
+function tick(){
+  ctx.clearRect(0,0,pw,ph);
+  particles.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>pw)p.vx*=-1; if(p.y<0||p.y>ph)p.vy*=-1; });
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const a=particles[i],b=particles[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+      if(d<110){ ctx.strokeStyle=`rgba(0,240,255,${0.07*(1-d/110)})`; ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke(); }
+    }
+    ctx.fillStyle='rgba(155,107,255,0.4)'; ctx.beginPath(); ctx.arc(particles[i].x,particles[i].y,1.3,0,Math.PI*2); ctx.fill();
+  }
+  requestAnimationFrame(tick);
+}
+tick();
+</script>
+</body>
+</html>
