@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Futucation — Dashboard</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#03040a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -30,6 +32,12 @@ a, button, .chip, .nav-item, .tier-card, .layer-item{ cursor:none; }
 @keyframes grainShift{ 0%{transform:translate(0,0);} 25%{transform:translate(-2%,2%);} 50%{transform:translate(2%,-1%);} 75%{transform:translate(-1%,-2%);} 100%{transform:translate(0,0);} }
 
 .magnetic{ display:inline-block; will-change:transform; }
+
+body.reduce-motion, body.reduce-motion *{ animation:none !important; transition:none !important; }
+body.reduce-motion{ cursor:auto !important; }
+body.reduce-motion #cursorDot, body.reduce-motion #cursorRing, body.reduce-motion .grain, body.reduce-motion #particleCanvas, body.reduce-motion .orb{ display:none !important; }
+body.reduce-motion a, body.reduce-motion button, body.reduce-motion .chip, body.reduce-motion .nav-item, body.reduce-motion .tier-card, body.reduce-motion .layer-item{ cursor:pointer !important; }
+body.reduce-motion .card:hover{ transform:none !important; }
 .mono{font-family:'JetBrains Mono',monospace;} .display{font-family:'Space Grotesk',sans-serif;}
 
 #particleCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.6; }
@@ -41,6 +49,8 @@ a, button, .chip, .nav-item, .tier-card, .layer-item{ cursor:none; }
 
 /* ===== LAYOUT ===== */
 .app{ position:relative; z-index:2; display:flex; min-height:100vh; }
+.consent-gate{ position:fixed; inset:0; z-index:500; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; }
+.consent-card{ width:100%; max-width:440px; background:linear-gradient(160deg, var(--panel), var(--panel2)); border:1px solid rgba(155,107,255,0.2); border-radius:20px; padding:40px 34px; }
 .sidebar{
   width:260px; flex-shrink:0; background:rgba(10,13,28,0.7); backdrop-filter:blur(14px);
   border-right:1px solid rgba(155,107,255,0.15); display:flex; flex-direction:column; padding:26px 18px;
@@ -145,6 +155,21 @@ footer.app-footer{ padding:18px 36px; text-align:center; border-top:1px solid rg
 .layer-body b{ color:var(--text); }
 .vocab-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
 .vocab-chip{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--bio); border:1px solid rgba(57,255,157,0.25); padding:4px 10px; border-radius:100px; background:rgba(57,255,157,0.05); }
+.mark-complete-btn{ margin-top:18px; padding:10px 18px; border-radius:10px; border:1px solid var(--cyan); background:rgba(0,240,255,0.08); color:var(--cyan); font-family:'JetBrains Mono',monospace; font-size:0.78rem; cursor:pointer; transition:all .2s; }
+.mark-complete-btn:hover{ background:rgba(0,240,255,0.18); }
+.mark-complete-btn.done{ border-color:var(--bio); color:var(--bio); background:rgba(57,255,157,0.08); cursor:default; }
+.layer-item.layer-done{ border-color:rgba(57,255,157,0.3); }
+.layer-item.layer-done .layer-name{ color:var(--bio); }
+.cert-btn{ padding:10px 20px; border-radius:10px; border:1px solid var(--gold); background:rgba(255,203,71,0.08); color:var(--gold); font-family:'JetBrains Mono',monospace; font-size:0.8rem; cursor:pointer; }
+.cert-btn:hover{ background:rgba(255,203,71,0.18); }
+.mentor-messages{ max-height:320px; overflow-y:auto; display:flex; flex-direction:column; gap:12px; margin-bottom:16px; padding-right:6px; }
+.mentor-msg{ padding:12px 16px; border-radius:12px; font-size:0.88rem; line-height:1.55; max-width:85%; }
+.mentor-msg.user{ align-self:flex-end; background:rgba(0,240,255,0.1); border:1px solid rgba(0,240,255,0.25); color:var(--text); }
+.mentor-msg.assistant{ align-self:flex-start; background:rgba(155,107,255,0.08); border:1px solid rgba(155,107,255,0.2); color:var(--text); }
+.mentor-msg.error{ align-self:flex-start; background:rgba(255,107,129,0.08); border:1px solid rgba(255,107,129,0.3); color:#ff8fa3; }
+.mentor-input-row{ display:flex; gap:10px; }
+.mentor-input-row input{ flex:1; padding:12px 14px; border-radius:10px; border:1px solid rgba(155,107,255,0.25); background:rgba(255,255,255,0.03); color:var(--text); font-size:0.88rem; outline:none; }
+.mentor-input-row input:focus{ border-color:var(--cyan); }
 
 /* convergence lab */
 .lab-grid{ display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center; margin-top:20px; }
@@ -196,6 +221,21 @@ input:focus{ border-color:var(--cyan); }
 <div class="grain"></div>
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
+
+<div class="consent-gate" id="consentGate" style="display:none;">
+  <div class="consent-card">
+    <div class="logo" style="justify-content:center; margin-bottom:18px;"><span class="logo-mark"></span>FUTUCATION</div>
+    <div class="welcome-line display" style="text-align:center;">Waiting for a parent's OK</div>
+    <p class="welcome-sub" style="text-align:center;">Because this account is under 13, a parent or guardian needs to approve it before the dashboard unlocks. This keeps things safe and in line with child-privacy rules.</p>
+    <div class="field">
+      <label>PARENT / GUARDIAN: CONFIRM YOUR EMAIL</label>
+      <input type="email" id="consentEmail" placeholder="the email entered at signup">
+    </div>
+    <button class="save-btn" style="width:100%;" onclick="approveConsent()">I'm the parent — Approve</button>
+    <div class="msg mono" id="consentMsg" style="margin-top:14px; font-size:0.8rem;"></div>
+    <button class="signout-btn" style="margin-top:18px;" onclick="signOut()">Sign Out Instead</button>
+  </div>
+</div>
 
 <div class="app">
   <aside class="sidebar" id="sidebar">
@@ -252,9 +292,9 @@ input:focus{ border-color:var(--cyan); }
             <div class="welcome-line display" id="welcomeLine">Welcome back.</div>
             <div class="welcome-sub">Your discipline path is open. Pick up where you left off, or explore something new.</div>
             <div class="progress-row">
-              <div class="mini-stat"><div class="mini-stat-num">1</div><div class="mini-stat-label">Active Tier</div></div>
-              <div class="mini-stat"><div class="mini-stat-num">1/30</div><div class="mini-stat-label">Disciplines Started</div></div>
-              <div class="mini-stat"><div class="mini-stat-num">0</div><div class="mini-stat-label">Credentials Earned</div></div>
+              <div class="mini-stat"><div class="mini-stat-num" id="activeTierNum">1</div><div class="mini-stat-label">Active Tier</div></div>
+              <div class="mini-stat"><div class="mini-stat-num"><span id="disciplinesStartedNum">0</span>/9</div><div class="mini-stat-label">Disciplines Started</div></div>
+              <div class="mini-stat"><div class="mini-stat-num" id="credentialsEarnedNum">0</div><div class="mini-stat-label">Credentials Earned</div></div>
             </div>
             <div class="tier-grid">
               <div class="card tier-card" onclick="showView('explorer')"><div class="tier-card-age mono">5–12 · EXPLORER</div><div class="tier-card-name display">Spark curiosity</div><div class="tier-card-desc">Animated worlds & gamified quests.</div><div class="tier-bar"><div class="tier-bar-fill" data-fill="35"></div></div></div>
@@ -301,10 +341,29 @@ input:focus{ border-color:var(--cyan); }
       <!-- CURRICULUM -->
       <div class="view" id="view-curriculum">
         <div class="card">
-          <div class="welcome-line display" id="disciplineTitle">Synthetic Biology & Biodesign</div>
-          <p class="welcome-sub" id="disciplineSub">Five layers, one discipline — from "why it exists" to "what it costs." Tap a layer to open it.</p>
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+            <div>
+              <div class="welcome-line display" id="disciplineTitle">Synthetic Biology & Biodesign</div>
+              <p class="welcome-sub" id="disciplineSub">Five layers, one discipline — from "why it exists" to "what it costs." Tap a layer to open it.</p>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+              <button class="cert-btn mono" id="certificateBtn" style="display:none;" onclick="openCertificate()">🎓 View Certificate</button>
+              <button class="cert-btn mono" style="border-color:var(--violet); color:var(--violet); background:rgba(155,107,255,0.08);" onclick="toggleMentor()">💬 Ask a Mentor</button>
+            </div>
+          </div>
           <div class="chip-row" id="disciplinePills" style="margin-bottom:8px;"></div>
           <div class="layer-list" id="layerList"></div>
+        </div>
+
+        <!-- AI MENTOR CHAT -->
+        <div class="card" id="mentorPanel" style="display:none; margin-top:20px;">
+          <div class="welcome-line display" style="font-size:1.1rem;">💬 Discipline Mentor</div>
+          <p class="welcome-sub" style="margin-bottom:14px;">Ask a question or pick one below — the mentor matches it to the right layer of this discipline.</p>
+          <div id="mentorMessages" class="mentor-messages"></div>
+          <div class="mentor-input-row">
+            <input type="text" id="mentorInput" placeholder="Ask a question…" onkeydown="if(event.key==='Enter') sendMentorMessage()">
+            <button class="save-btn" onclick="sendMentorMessage()">Send</button>
+          </div>
         </div>
       </div>
 
@@ -333,6 +392,13 @@ input:focus{ border-color:var(--cyan); }
           <div class="field"><label>FULL NAME</label><input type="text" id="editName"></div>
           <button class="save-btn" onclick="saveProfile()">Save Changes</button>
           <div class="msg mono" id="profMsg" style="margin-top:14px; font-size:0.8rem; color:var(--bio);"></div>
+
+          <div style="margin-top:30px; padding-top:24px; border-top:1px solid rgba(255,255,255,0.06);">
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+              <input type="checkbox" id="reducedMotionToggle" onchange="toggleReducedMotion()" style="width:auto; accent-color:var(--cyan);">
+              <span style="font-size:0.88rem;">Reduce motion (calmer mode — turns off cursor glow, tilt, glitch & particles)</span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -364,6 +430,17 @@ async function init(){
     currentUser = await res.json();
   } catch(e){ window.location.href = '/'; return; }
 
+  if(currentUser.parental_consent_needed){
+    document.getElementById('consentGate').style.display = 'flex';
+    document.querySelector('.app').style.display = 'none';
+    return;
+  }
+
+  if(currentUser.reduced_motion){
+    document.body.classList.add('reduce-motion');
+    document.getElementById('reducedMotionToggle').checked = true;
+  }
+
   const name = currentUser.full_name || currentUser.email.split('@')[0];
   document.getElementById('sideName').textContent = name;
   document.getElementById('sideAvatar').textContent = name[0].toUpperCase();
@@ -373,8 +450,36 @@ async function init(){
   document.getElementById('profAvatar').textContent = name[0].toUpperCase();
   document.getElementById('editName').value = name;
   animateXP(currentUser.xp_points || 0);
+  document.getElementById('disciplinesStartedNum').textContent = currentUser.disciplines_started || 0;
+  document.getElementById('credentialsEarnedNum').textContent = currentUser.credentials_earned || 0;
+
+  await loadProgress();
 }
 init();
+
+async function approveConsent(){
+  const email = document.getElementById('consentEmail').value.trim();
+  const msg = document.getElementById('consentMsg');
+  msg.style.color = 'var(--muted)';
+  msg.textContent = 'Checking…';
+  try{
+    const res = await fetch(API_BASE + '/consent/approve', {
+      method: 'POST', headers: authHeaders(), body: JSON.stringify({ guardian_email: email })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || 'Could not approve.');
+    msg.style.color = 'var(--bio)';
+    msg.textContent = 'Approved! Loading your dashboard…';
+    setTimeout(()=> window.location.reload(), 900);
+  }catch(e){
+    msg.style.color = '#ff6b81';
+    msg.textContent = e.message;
+  }
+}
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+}
 
 function signOut(){
   localStorage.removeItem('futucation_token');
@@ -394,6 +499,16 @@ async function saveProfile(){
     document.getElementById('sideName').textContent = newName;
     document.getElementById('profName').textContent = newName;
   }catch(e){ msg.textContent = 'Could not save. Try again.'; }
+}
+
+async function toggleReducedMotion(){
+  const enabled = document.getElementById('reducedMotionToggle').checked;
+  document.body.classList.toggle('reduce-motion', enabled);
+  try{
+    await fetch(API_BASE + '/auth/me', {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ reduced_motion: enabled })
+    });
+  }catch(e){ /* non-critical if this fails to save */ }
 }
 
 // ===== NAV / VIEW SWITCHING =====
@@ -510,6 +625,12 @@ const disciplinesData = {
 const layerList = document.getElementById('layerList');
 const disciplinePills = document.getElementById('disciplinePills');
 let activeDiscipline = 'synbio';
+let progressData = {}; // { discipline: [layer_index, ...] }
+
+function pillLabel(key){
+  const done = (progressData[key] || []).length;
+  return `${disciplinesData[key].label} <span class="mono" style="opacity:0.6; font-size:0.7em;">(${done}/5)</span>`;
+}
 
 function renderDiscipline(key){
   activeDiscipline = key;
@@ -517,27 +638,266 @@ function renderDiscipline(key){
   document.getElementById('disciplineTitle').textContent = d.label;
   [...disciplinePills.children].forEach(c=> c.classList.toggle('selected', c.dataset.key===key));
   layerList.innerHTML = '';
-  d.layers.forEach(l=>{
+  const completed = progressData[key] || [];
+
+  d.layers.forEach((l, idx)=>{
+    const isDone = completed.includes(idx);
     const div = document.createElement('div');
-    div.className = 'layer-item';
-    div.innerHTML = `<div class="layer-head"><div class="layer-name display">${l.name}</div><div class="layer-meta">${l.meta}</div></div>
-      <div class="layer-body">${l.body}<div class="vocab-row">${l.vocab.map(v=>`<span class="vocab-chip">${v}</span>`).join('')}</div></div>`;
-    div.addEventListener('click', ()=> div.classList.toggle('open'));
-    if(typeof bindCursorHover === 'function') bindCursorHover(div);
+    div.className = 'layer-item' + (isDone ? ' layer-done' : '');
+    div.innerHTML = `<div class="layer-head"><div class="layer-name display">${isDone ? '✓ ' : ''}${l.name}</div><div class="layer-meta">${l.meta}</div></div>
+      <div class="layer-body">${l.body}<div class="vocab-row">${l.vocab.map(v=>`<span class="vocab-chip">${v}</span>`).join('')}</div>
+      <button class="mark-complete-btn ${isDone ? 'done' : ''}" data-discipline="${key}" data-layer="${idx}">${isDone ? '✓ Layer Complete' : 'Mark This Layer Complete'}</button></div>`;
+    div.querySelector('.layer-head').addEventListener('click', ()=> div.classList.toggle('open'));
+    const btn = div.querySelector('.mark-complete-btn');
+    if(!isDone){ btn.addEventListener('click', (e)=>{ e.stopPropagation(); markLayerComplete(key, idx); }); }
+    if(typeof bindCursorHover === 'function'){ bindCursorHover(div); bindCursorHover(btn); }
     layerList.appendChild(div);
   });
+
+  const certBtn = document.getElementById('certificateBtn');
+  if(completed.length === 5){
+    certBtn.style.display = 'inline-block';
+  } else {
+    certBtn.style.display = 'none';
+  }
+
+  // reset mentor panel when switching disciplines so it doesn't show stale content
+  const mentorPanel = document.getElementById('mentorPanel');
+  if(mentorPanel) mentorPanel.style.display = 'none';
+}
+
+async function markLayerComplete(discipline, layerIndex){
+  try{
+    const res = await fetch(API_BASE + '/progress/complete', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ discipline, layer_index: layerIndex })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || 'Could not save progress.');
+
+    progressData = data.discipline_progress;
+    if(data.newly_completed) animateXP(data.xp_points);
+    refreshPillLabels();
+    updateTierBars();
+    updateOverviewCounts();
+    renderDiscipline(discipline);
+  }catch(e){ console.error(e); }
+}
+
+function refreshPillLabels(){
+  [...disciplinePills.children].forEach(pill=>{
+    pill.innerHTML = pillLabel(pill.dataset.key);
+  });
+}
+
+function updateOverviewCounts(){
+  const started = Object.keys(progressData).filter(k => (progressData[k]||[]).length > 0).length;
+  const credentials = Object.keys(progressData).filter(k => (progressData[k]||[]).length === 5).length;
+  document.getElementById('disciplinesStartedNum').textContent = started;
+  document.getElementById('credentialsEarnedNum').textContent = credentials;
+}
+
+function updateTierBars(){
+  const disciplines = Object.keys(disciplinesData);
+  const countAt = (indices) => disciplines.reduce((sum, key) => sum + indices.filter(i => (progressData[key]||[]).includes(i)).length, 0);
+  const pct = (count, max) => Math.min(100, Math.round((count / max) * 100));
+
+  const explorerPct = pct(countAt([0]), disciplines.length);
+  const navigatorPct = pct(countAt([1,2]), disciplines.length * 2);
+  const pioneerPct = pct(countAt([3]), disciplines.length);
+  const sagePct = pct(countAt([4]), disciplines.length);
+
+  const bars = document.querySelectorAll('.tier-bar-fill');
+  if(bars[0]) bars[0].dataset.fill = explorerPct;
+  if(bars[1]) bars[1].dataset.fill = navigatorPct;
+  if(bars[2]) bars[2].dataset.fill = pioneerPct;
+  if(bars[3]) bars[3].dataset.fill = sagePct;
+  animateProgressBars();
+}
+
+async function loadProgress(){
+  try{
+    const res = await fetch(API_BASE + '/progress/me', { headers: authHeaders() });
+    if(!res.ok) return;
+    const data = await res.json();
+    progressData = data.discipline_progress || {};
+  }catch(e){ progressData = {}; }
+  refreshPillLabels();
+  updateTierBars();
+  renderDiscipline(activeDiscipline);
 }
 
 Object.keys(disciplinesData).forEach(key=>{
   const pill = document.createElement('button');
   pill.className = 'chip mono';
   pill.dataset.key = key;
-  pill.textContent = disciplinesData[key].label;
+  pill.innerHTML = pillLabel(key);
   pill.addEventListener('click', ()=> renderDiscipline(key));
   if(typeof bindCursorHover === 'function') bindCursorHover(pill);
   disciplinePills.appendChild(pill);
 });
 renderDiscipline('synbio');
+
+// ===== RULE-BASED MENTOR (no AI, no external calls — matches your question against this discipline's own content) =====
+let mentorOpenedFor = {};
+
+function extractHook(layer){
+  const match = layer.body.match(/<b>(?:Hook|Brief):<\/b>\s*([\s\S]*?)<br>/i);
+  if(match) return match[1].trim();
+  return layer.body.replace(/<[^>]*>/g, '').slice(0, 200);
+}
+
+function mentorAnswer(disciplineKey, question){
+  const d = disciplinesData[disciplineKey];
+  const q = question.toLowerCase();
+
+  // 1. Try to match a vocab term mentioned in the question
+  for(let i=0; i<d.layers.length; i++){
+    const layer = d.layers[i];
+    for(const term of layer.vocab){
+      if(q.includes(term.toLowerCase())){
+        return `Good question about **${term}** — that's covered in "${layer.name}":\n\n${extractHook(layer)}\n\nOpen that layer above to go deeper.`;
+      }
+    }
+  }
+
+  // 2. Fall back to matching the *kind* of question being asked
+  let targetIndex = 0; // default: L1 "why it exists"
+  if(/\bwho\b|practitioner|career|job|company|companies|works? in/.test(q)) targetIndex = 2;
+  else if(/ethic|risk|danger|cost|wrong|bad|safe|harm|govern/.test(q)) targetIndex = 4;
+  else if(/\bhow\b|works?\b|mechanism|tool/.test(q)) targetIndex = 1;
+  else if(/build|project|create|career path|do i|can i|sprint/.test(q)) targetIndex = 3;
+
+  const layer = d.layers[targetIndex];
+  return `Here's a starting point from "${layer.name}":\n\n${extractHook(layer)}\n\nTap that layer above to read the full activities and vocabulary.`;
+}
+
+const quickQuestions = [
+  { label:'Why does this matter?', idx:0 },
+  { label:'How does it actually work?', idx:1 },
+  { label:'Who works in this field?', idx:2 },
+  { label:'What could I build?', idx:3 },
+  { label:'What are the risks?', idx:4 },
+];
+
+function toggleMentor(){
+  const panel = document.getElementById('mentorPanel');
+  const willOpen = panel.style.display === 'none';
+  panel.style.display = willOpen ? 'block' : 'none';
+  if(willOpen && !mentorOpenedFor[activeDiscipline]){
+    mentorOpenedFor[activeDiscipline] = true;
+    document.getElementById('mentorMessages').innerHTML = '';
+    addMentorMessage('assistant', `Ask me anything about ${disciplinesData[activeDiscipline].label} — or tap a quick question below.`);
+    renderQuickQuestions();
+  }
+}
+
+function renderQuickQuestions(){
+  let row = document.getElementById('mentorQuickRow');
+  if(!row){
+    row = document.createElement('div');
+    row.id = 'mentorQuickRow';
+    row.className = 'chip-row';
+    row.style.marginBottom = '14px';
+    document.getElementById('mentorMessages').insertAdjacentElement('afterend', row);
+  }
+  row.innerHTML = '';
+  quickQuestions.forEach(qq=>{
+    const chip = document.createElement('button');
+    chip.className = 'chip mono';
+    chip.textContent = qq.label;
+    chip.onclick = ()=>{ document.getElementById('mentorInput').value = qq.label; sendMentorMessage(); };
+    row.appendChild(chip);
+  });
+}
+
+function addMentorMessage(role, text){
+  const wrap = document.getElementById('mentorMessages');
+  const div = document.createElement('div');
+  div.className = 'mentor-msg ' + role;
+  div.style.whiteSpace = 'pre-line';
+  div.textContent = text;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function sendMentorMessage(){
+  const input = document.getElementById('mentorInput');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  addMentorMessage('user', text);
+  const reply = mentorAnswer(activeDiscipline, text);
+  setTimeout(()=> addMentorMessage('assistant', reply), 250); // tiny delay so it doesn't feel instant/robotic
+}
+
+// ===== CONVERGENCE CERTIFICATE (canvas-generated, no backend needed) =====
+function openCertificate(){
+  const d = disciplinesData[activeDiscipline];
+  const name = currentUser?.full_name || 'Futucation Learner';
+  const canvas = document.createElement('canvas');
+  canvas.width = 1200; canvas.height = 850;
+  const ctx = canvas.getContext('2d');
+
+  // background
+  const grad = ctx.createLinearGradient(0,0,1200,850);
+  grad.addColorStop(0, '#0a0d1c'); grad.addColorStop(1, '#0d1226');
+  ctx.fillStyle = grad; ctx.fillRect(0,0,1200,850);
+
+  // border
+  ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 3;
+  ctx.strokeRect(30,30,1140,790);
+  ctx.strokeStyle = 'rgba(155,107,255,0.5)'; ctx.lineWidth = 1;
+  ctx.strokeRect(50,50,1100,750);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#00f0ff';
+  ctx.font = '600 22px monospace';
+  ctx.fillText('F U T U C A T I O N', 600, 140);
+
+  ctx.fillStyle = '#8b93b8';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('CONVERGENCE CERTIFICATE', 600, 175);
+
+  ctx.fillStyle = '#eef0ff';
+  ctx.font = '600 42px sans-serif';
+  ctx.fillText('Certificate of Completion', 600, 280);
+
+  ctx.fillStyle = '#8b93b8';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('This certifies that', 600, 350);
+
+  ctx.fillStyle = '#00f0ff';
+  ctx.font = '600 48px sans-serif';
+  ctx.fillText(name, 600, 420);
+
+  ctx.fillStyle = '#8b93b8';
+  ctx.font = '20px sans-serif';
+  ctx.fillText('has completed all five layers of', 600, 480);
+
+  ctx.fillStyle = '#9b6bff';
+  ctx.font = '600 36px sans-serif';
+  ctx.fillText(d.label, 600, 540);
+
+  ctx.fillStyle = '#39ff9d';
+  ctx.font = '18px monospace';
+  ctx.fillText('Why It Exists → How It Works → Who Is Doing It → What You Can Do → What It Costs', 600, 590);
+
+  const dateStr = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  ctx.fillStyle = '#8b93b8';
+  ctx.font = '16px monospace';
+  ctx.fillText(dateStr, 600, 700);
+  ctx.fillText('© Futucation by Pison Education and Training Services Limited', 600, 760);
+
+  canvas.toBlob((blob)=>{
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `futucation-certificate-${activeDiscipline}.png`;
+    a.click();
+    setTimeout(()=> URL.revokeObjectURL(url), 2000);
+  });
+}
 
 // ===== CONVERGENCE LAB =====
 const labDisciplines = ['AI Safety','Synthetic Bio','Quantum Comp.','Climate Eng.','Robotics','Neurotech'];
