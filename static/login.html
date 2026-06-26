@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Futucation — Sign In</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#03040a">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -94,6 +96,14 @@ input:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,240,255,0.1);
         <label>PASSWORD</label>
         <input type="password" id="password" placeholder="••••••••" required minlength="6" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="current-password">
       </div>
+      <div class="field" id="birthYearField" style="display:none;">
+        <label>BIRTH YEAR</label>
+        <input type="number" id="birthYear" placeholder="2014" min="1930" max="2026">
+      </div>
+      <div class="field" id="guardianField" style="display:none;">
+        <label>PARENT / GUARDIAN EMAIL <span style="color:var(--muted); font-weight:400;">(required under 13)</span></label>
+        <input type="email" id="guardianEmail" placeholder="parent@example.com" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
       <button class="submit-btn" id="submitBtn" type="submit">Sign In →</button>
       <div class="msg" id="formMsg"></div>
     </form>
@@ -116,6 +126,7 @@ function setMode(m){
   document.getElementById('tabLogin').classList.toggle('active', m==='login');
   document.getElementById('tabRegister').classList.toggle('active', m==='register');
   document.getElementById('nameField').style.display = m==='register' ? 'block' : 'none';
+  document.getElementById('birthYearField').style.display = m==='register' ? 'block' : 'none';
   document.getElementById('formTitle').textContent = m==='login' ? 'Welcome back' : 'Begin your path';
   document.getElementById('formSub').textContent = m==='login' ? 'Sign in to continue your discipline path.' : 'Create an account to start Tier 1 — Explorer.';
   document.getElementById('submitBtn').textContent = m==='login' ? 'Sign In →' : 'Create Account →';
@@ -123,7 +134,14 @@ function setMode(m){
     ? 'New to Futucation? <a onclick="setMode(\'register\')">Create an account</a>'
     : 'Already have an account? <a onclick="setMode(\'login\')">Sign in</a>';
   document.getElementById('formMsg').textContent = '';
+  if(m!=='register') document.getElementById('guardianField').style.display = 'none';
 }
+
+document.getElementById('birthYear').addEventListener('input', ()=>{
+  const year = parseInt(document.getElementById('birthYear').value, 10);
+  const age = new Date().getFullYear() - year;
+  document.getElementById('guardianField').style.display = (year && age < 13) ? 'block' : 'none';
+});
 
 async function handleSubmit(e){
   e.preventDefault();
@@ -133,6 +151,8 @@ async function handleSubmit(e){
   const email = document.getElementById('email').value.trim().toLowerCase();
   const password = document.getElementById('password').value.trim();
   const fullName = document.getElementById('fullName').value.trim();
+  const birthYear = parseInt(document.getElementById('birthYear').value, 10) || null;
+  const guardianEmail = document.getElementById('guardianEmail').value.trim();
 
   btn.disabled = true; btn.textContent = 'Please wait…';
 
@@ -141,7 +161,7 @@ async function handleSubmit(e){
       const res = await fetch(API_BASE + '/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: fullName || email.split('@')[0], email, password })
+        body: JSON.stringify({ full_name: fullName || email.split('@')[0], email, password, birth_year: birthYear, guardian_email: guardianEmail || null })
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.detail || 'Could not create account.');
@@ -171,6 +191,11 @@ async function handleSubmit(e){
 
 // redirect if already logged in
 if(localStorage.getItem('futucation_token')) window.location.href = '/app';
+
+// PWA: register service worker so the app can be installed
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/static/sw.js').catch(()=>{});
+}
 
 // ===== background particles (lightweight) =====
 const canvas = document.getElementById('particleCanvas'), ctx = canvas.getContext('2d');
