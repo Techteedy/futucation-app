@@ -216,8 +216,8 @@ input:focus{ border-color:var(--cyan); }
     </div>
 
     <div class="nav-group">
-      <div class="nav-label">Sample Discipline</div>
-      <div class="nav-item" data-view="curriculum"><span class="nav-dot"></span>Synthetic Biology</div>
+      <div class="nav-label">Disciplines</div>
+      <div class="nav-item" data-view="curriculum"><span class="nav-dot"></span>Browse Disciplines</div>
     </div>
 
     <div class="sidebar-bottom">
@@ -301,8 +301,9 @@ input:focus{ border-color:var(--cyan); }
       <!-- CURRICULUM -->
       <div class="view" id="view-curriculum">
         <div class="card">
-          <div class="welcome-line display">Synthetic Biology & Biodesign</div>
-          <p class="welcome-sub">Five layers, one discipline — from "why it exists" to "what it costs." Tap a layer to open it.</p>
+          <div class="welcome-line display" id="disciplineTitle">Synthetic Biology & Biodesign</div>
+          <p class="welcome-sub" id="disciplineSub">Five layers, one discipline — from "why it exists" to "what it costs." Tap a layer to open it.</p>
+          <div class="chip-row" id="disciplinePills" style="margin-bottom:8px;"></div>
           <div class="layer-list" id="layerList"></div>
         </div>
       </div>
@@ -396,7 +397,7 @@ async function saveProfile(){
 }
 
 // ===== NAV / VIEW SWITCHING =====
-const titles = { overview:'Overview', explorer:'Explorer · Ages 5–12', navigator:'Navigator · Ages 13–18', pioneer:'Pioneer · Ages 19–35', sage:'Sage · Ages 35+', curriculum:'Synthetic Biology & Biodesign', lab:'Convergence Lab', profile:'My Profile' };
+const titles = { overview:'Overview', explorer:'Explorer · Ages 5–12', navigator:'Navigator · Ages 13–18', pioneer:'Pioneer · Ages 19–35', sage:'Sage · Ages 35+', curriculum:'Disciplines', lab:'Convergence Lab', profile:'My Profile' };
 function showView(name){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+name).classList.add('active');
@@ -439,23 +440,104 @@ function placeNodes(){
 }
 placeNodes(); window.addEventListener('resize', placeNodes);
 
-// ===== CURRICULUM LAYERS =====
-const layers = [
-  {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if you could program a living cell the same way a coder writes software? DNA is essentially a code — four letters carrying instructions for building life. Synthetic biology asks: what if we wrote new instructions?<br><br><b>Activities:</b> Watch 'The Tiniest Engineers' · Explore an interactive cell map · Design your own glowing organism.", vocab:["DNA","Cell","Organism","Code","Engineer"]},
-  {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> CRISPR-Cas9 works like molecular scissors — but how do you tell the scissors where to cut? Core tools include CRISPR, DNA synthesis, and computational modelling.<br><br><b>Activities:</b> CRISPR Targeting Simulator · Case study on mRNA vaccines · Structured debate on germline editing.", vocab:["CRISPR-Cas9","Gene editing","Chassis organism","Biobrick"]},
-  {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the people building living medicines, pollution-eating bacteria, and lab-grown materials. The field is deliberately interdisciplinary.<br><br><b>Activities:</b> Practitioner profiles · Interactive global map of 15 labs and biohackerspaces · Optional mentor match.", vocab:["iGEM","Biofoundry","Biohackerspace"]},
-  {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a synthetic biology solution to a real problem in your community. Four weeks, async work, one live cohort session per week.<br><br><b>Weeks:</b> Problem definition → Solution design → Feasibility & ethics review → Pitch & peer review.", vocab:["Genetic circuit","Biosafety level","Regulatory pathway"]},
-  {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> Who decides what we're allowed to build with living systems — and who is protected when things go wrong? Covers biosecurity, dual-use risk, environmental release, and access & equity.<br><br><b>Activities:</b> Biosecurity dilemma scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Dual-use research","Biosecurity","Governance gap"]},
-];
+// ===== CURRICULUM: 9 DISCIPLINES, 5 LAYERS EACH =====
+const disciplinesData = {
+  synbio: { label:"Synthetic Biology & Biodesign", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if you could program a living cell the same way a coder writes software? DNA is essentially a code — four letters carrying instructions for building life. Synthetic biology asks: what if we wrote new instructions?<br><br><b>Activities:</b> Watch 'The Tiniest Engineers' · Explore an interactive cell map · Design your own glowing organism.", vocab:["DNA","Cell","Organism","Code","Engineer"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> CRISPR-Cas9 works like molecular scissors — but how do you tell the scissors where to cut? Core tools include CRISPR, DNA synthesis, and computational modelling.<br><br><b>Activities:</b> CRISPR Targeting Simulator · Case study on mRNA vaccines · Structured debate on germline editing.", vocab:["CRISPR-Cas9","Gene editing","Chassis organism","Biobrick"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the people building living medicines, pollution-eating bacteria, and lab-grown materials. The field is deliberately interdisciplinary.<br><br><b>Activities:</b> Practitioner profiles · Interactive global map of 15 labs and biohackerspaces · Optional mentor match.", vocab:["iGEM","Biofoundry","Biohackerspace"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a synthetic biology solution to a real problem in your community. Four weeks, async work, one live cohort session per week.<br><br><b>Weeks:</b> Problem definition → Solution design → Feasibility & ethics review → Pitch & peer review.", vocab:["Genetic circuit","Biosafety level","Regulatory pathway"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> Who decides what we're allowed to build with living systems — and who is protected when things go wrong? Covers biosecurity, dual-use risk, environmental release, and access & equity.<br><br><b>Activities:</b> Biosecurity dilemma scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Dual-use research","Biosecurity","Governance gap"]},
+  ]},
+  aisafety: { label:"AI Safety & Alignment", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if you taught a robot to fetch your ball, but it knocked over everything in its path to get there fast? AI safety asks: how do we make sure smart machines actually want what we want?<br><br><b>Activities:</b> Watch 'The Eager Robot' · Play a goal-matching game · Design your own helper-bot rule.", vocab:["AI","Goal","Rule","Helper","Robot"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> An AI trained to win a boat race learned to spin in circles collecting points instead of finishing — because points were the goal, not winning. Covers reward hacking, alignment, and learning from human feedback.<br><br><b>Activities:</b> Reward-Hacking Simulator · Case study on a real misaligned AI · Debate: should AI learn from any data freely?", vocab:["Alignment","Reward hacking","RLHF","Objective function"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the people whose job is to think like a worst-case AI before it's ever built. Practiced at AI labs, safety institutes, and government agencies.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of safety labs and institutes · Optional mentor match.", vocab:["Red teaming","AI safety institute","Interpretability"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a safety evaluation for a hypothetical AI system.<br><br><b>Weeks:</b> Problem definition → Threat modeling → Build an evaluation suite → Pitch & peer review.", vocab:["Threat model","Evaluation suite","Red-team report"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> Who's responsible when an AI causes harm — the coder, the company, or the AI itself? Covers accountability gaps, dual-use capability, and concentration of power.<br><br><b>Activities:</b> Harm-scenario discussion · Policy overview · Cross-discipline ethics forum.", vocab:["Accountability gap","Dual-use","Capability concentration"]},
+  ]},
+  quantum: { label:"Quantum Computing", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if a coin could be heads AND tails until you looked at it? That's the strange idea behind quantum computers.<br><br><b>Activities:</b> Watch 'The Coin That Couldn't Decide' · Interactive qubit-flip game · Design your own quantum coin trick.", vocab:["Qubit","Superposition","Quantum","Bit"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> Classical computers check doors one at a time; quantum computers can check many at once. Covers superposition, entanglement, and quantum gates.<br><br><b>Activities:</b> Quantum Circuit Simulator · Case study on quantum chemistry simulation · Debate: should quantum computing be regulated?", vocab:["Entanglement","Quantum gate","Decoherence","Quantum advantage"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the physicists racing to keep a qubit stable for longer than a heartbeat. Practiced in national labs, quantum startups, and physics departments.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of quantum labs and startups · Optional mentor match.", vocab:["Cryostat","Quantum startup","Error correction"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a quantum use-case proposal for a real-world problem like drug discovery or logistics.<br><br><b>Weeks:</b> Problem definition → Algorithm selection → Feasibility & ethics review → Pitch & peer review.", vocab:["Quantum algorithm","NISQ era","Use-case proposal"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> If quantum computers can break today's encryption, who gets left exposed first? Covers post-quantum cryptography and access inequality.<br><br><b>Activities:</b> Encryption-risk scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Post-quantum cryptography","Cryptographic risk","Access inequality"]},
+  ]},
+  climate: { label:"Climate Engineering", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if we could paint the sky a little whiter to cool the planet down?<br><br><b>Activities:</b> Watch 'The Cooling Cloud' · Interactive Earth-thermostat game · Design your own cooling idea.", vocab:["Climate","Carbon","Sunlight","Engineer"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> Spraying particles into the sky could cool the Earth — but also change rainfall thousands of miles away. Covers solar radiation management and carbon dioxide removal.<br><br><b>Activities:</b> Climate Intervention Simulator · Case study on a real geoengineering field trial · Debate: should one country cool the planet alone?", vocab:["Solar radiation management","Carbon dioxide removal","Albedo","Climate model"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the scientists modeling what happens if we dim the sun on purpose. Practiced in climate institutes and international working groups.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of research programs · Optional mentor match.", vocab:["Geoengineering","Climate working group","Field trial"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a regional climate intervention proposal with a risk assessment.<br><br><b>Weeks:</b> Problem definition → Intervention design → Feasibility & ethics review → Pitch & peer review.", vocab:["Risk assessment","Regional impact","Governance framework"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> Who gets to decide the planet's thermostat — and who lives with the side effects? Covers moral hazard and transboundary impact.<br><br><b>Activities:</b> Unilateral-intervention scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Moral hazard","Transboundary impact","Governance gap"]},
+  ]},
+  neurotech: { label:"Neurotechnology (BCI)", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if you could move a video game character just by thinking about it?<br><br><b>Activities:</b> Watch 'The Thought-Powered Car' · Interactive brain-signal matching game · Design your own thought-controlled gadget.", vocab:["Brain","Signal","Thought","Device"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> Your brain sends tiny electrical signals — neurotech learns to read them like a new language. Covers EEG, implants, and signal decoding.<br><br><b>Activities:</b> Brain-Signal Decoder Simulator · Case study on a BCI helping a paralyzed patient communicate · Debate: should neural data be protected like medical records?", vocab:["EEG","Neural implant","Signal decoding","BCI"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the engineers and neuroscientists building devices that let paralyzed patients speak again. Practiced in neuroscience labs and medical device startups.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of neurotech labs · Optional mentor match.", vocab:["Neuroscience lab","Medical device startup","Clinical trial"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a neurotech-assisted solution for a real accessibility challenge.<br><br><b>Weeks:</b> Problem definition → Device concept → Feasibility & ethics review → Pitch & peer review.", vocab:["Accessibility challenge","Device concept","Signal-to-action mapping"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> If a device can read your thoughts, who else gets to see them? Covers neural privacy and cognitive liberty.<br><br><b>Activities:</b> Neural-data-misuse scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Neural privacy","Cognitive liberty","Informed consent"]},
+  ]},
+  nano: { label:"Nanotechnology", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if you could build with pieces so small, a million of them could fit on a pinhead?<br><br><b>Activities:</b> Watch 'The Tiny Builders' · Interactive atom-stacking game · Design your own nano-material.", vocab:["Atom","Molecule","Tiny","Material"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> At the nanoscale, gold doesn't even look gold anymore — size changes everything. Covers nanoparticles, self-assembly, and nanofabrication.<br><br><b>Activities:</b> Nanoparticle Design Simulator · Case study on nanomedicine drug delivery · Debate: should nanomaterials need special safety labels?", vocab:["Nanoparticle","Self-assembly","Nanofabrication","Nanomedicine"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the scientists engineering particles too small to see but powerful enough to deliver medicine straight to a tumor.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of nanotech labs and companies · Optional mentor match.", vocab:["Materials lab","Nanomedicine startup","Semiconductor"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a nanomaterial solution for a real-world problem like water filtration.<br><br><b>Weeks:</b> Problem definition → Material design → Feasibility & ethics review → Pitch & peer review.", vocab:["Material design","Toxicity testing","Scale-up pathway"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> If nanoparticles are too small to see, how do we know where they end up? Covers environmental release and regulatory gaps.<br><br><b>Activities:</b> Environmental-release scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Environmental release","Toxicity unknowns","Regulatory gap"]},
+  ]},
+  space: { label:"Space Resource Utilization", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if astronauts could mine water from the Moon instead of carrying it from Earth?<br><br><b>Activities:</b> Watch 'The Moon Miners' · Interactive resource-mapping game · Design your own space mining rover.", vocab:["Moon","Mining","Resource","Rover"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> The Moon's south pole hides ice in permanently shadowed craters — and that ice could become rocket fuel. Covers in-situ resource utilization and asteroid mining.<br><br><b>Activities:</b> ISRU Simulator · Case study on a lunar ice-mapping mission · Debate: who owns resources mined in space?", vocab:["ISRU","Propellant","Asteroid mining","Regolith"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the engineers designing robots to survive -200°C lunar nights while digging for ice. Practiced at space agencies and aerospace startups.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of space mining missions · Optional mentor match.", vocab:["Aerospace startup","Planetary science","Lunar mission"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a resource-extraction proposal for a real off-Earth location.<br><br><b>Weeks:</b> Problem definition → Extraction system design → Feasibility & ethics review → Pitch & peer review.", vocab:["Extraction system","Mission feasibility","Site selection"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> If no one owns the Moon, who decides who gets to mine it first? Covers space law gaps and equitable access.<br><br><b>Activities:</b> Resource-dispute scenario · Policy overview on the Outer Space Treaty · Cross-discipline ethics forum.", vocab:["Outer Space Treaty","Space law gap","Equitable access"]},
+  ]},
+  fusion: { label:"Fusion Energy", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if we could capture a tiny piece of the Sun's power here on Earth?<br><br><b>Activities:</b> Watch 'The Tiny Sun' · Interactive atom-squeezing game · Design your own star-powered city.", vocab:["Star","Energy","Atom","Fusion"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> Fusion doesn't split atoms like old nuclear plants — it squeezes them together, like the Sun does. Covers plasma confinement and tokamaks.<br><br><b>Activities:</b> Plasma Confinement Simulator · Case study on a real fusion ignition breakthrough · Debate: should fusion research be public or private?", vocab:["Plasma","Tokamak","Ignition","Confinement"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the physicists trying to keep plasma hotter than the Sun's core, contained in a magnetic bottle. Practiced at national labs and fusion startups.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of fusion projects worldwide · Optional mentor match.", vocab:["Fusion startup","Magnetic bottle","International collaboration"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a community energy proposal assuming commercial fusion exists.<br><br><b>Weeks:</b> Problem definition → Energy system design → Feasibility & ethics review → Pitch & peer review.", vocab:["Energy system design","Grid integration","Commercial viability"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> If fusion finally works, who gets cheap energy first — and who gets left waiting? Covers energy equity and transition risk.<br><br><b>Activities:</b> Energy-access-disparity scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Energy equity","Transition risk","Access timeline"]},
+  ]},
+  genomics: { label:"Genomics & Personalized Medicine", layers:[
+    {name:"L1 · Why It Exists", meta:"Explorer · Ages 5–12 · 20 min", body:"<b>Hook:</b> What if a doctor could read your body's instruction manual before you even got sick?<br><br><b>Activities:</b> Watch 'The Instruction Manual Inside You' · Interactive gene-matching game · Design your own healthy-habit plan.", vocab:["Gene","DNA","Trait","Instruction"]},
+    {name:"L2 · How It Works", meta:"Navigator · Ages 13–18 · 45 min", body:"<b>Hook:</b> Two people can take the same medicine and have totally different results — because their genes are different. Covers genome sequencing and pharmacogenomics.<br><br><b>Activities:</b> Genome Sequencing Simulator · Case study on personalized cancer treatment · Debate: should everyone's genome be sequenced at birth?", vocab:["Genome sequencing","Pharmacogenomics","Polygenic risk","Biomarker"]},
+    {name:"L3 · Who Is Doing It", meta:"Navigator · Ages 13–18 · 30 min", body:"<b>Hook:</b> Meet the doctors and data scientists matching treatments to your exact genetic code. Practiced in hospitals and genomics startups.<br><br><b>Activities:</b> Practitioner profiles · Interactive map of genomics labs and companies · Optional mentor match.", vocab:["Genomics startup","Clinical geneticist","Biobank"]},
+    {name:"L4 · What You Can Do", meta:"Pioneer · Ages 19–35 · 4 weeks", body:"<b>Brief:</b> Design a personalized health proposal using a sample genetic profile.<br><br><b>Weeks:</b> Problem definition → Risk analysis → Feasibility & ethics review → Pitch & peer review.", vocab:["Risk analysis","Genetic counseling","Personalized care plan"]},
+    {name:"L5 · What It Costs", meta:"All Tiers · 25 min · Ethics", body:"<b>Hook:</b> If your genes predict your future health, who else should be allowed to see that prediction? Covers genetic privacy and insurance discrimination.<br><br><b>Activities:</b> Genetic-data-misuse scenario · Policy overview · Cross-discipline ethics forum.", vocab:["Genetic privacy","Insurance discrimination","Equitable access"]},
+  ]},
+};
+
 const layerList = document.getElementById('layerList');
-layers.forEach(l=>{
-  const div = document.createElement('div');
-  div.className = 'layer-item';
-  div.innerHTML = `<div class="layer-head"><div class="layer-name display">${l.name}</div><div class="layer-meta">${l.meta}</div></div>
-    <div class="layer-body">${l.body}<div class="vocab-row">${l.vocab.map(v=>`<span class="vocab-chip">${v}</span>`).join('')}</div></div>`;
-  div.addEventListener('click', ()=> div.classList.toggle('open'));
-  layerList.appendChild(div);
+const disciplinePills = document.getElementById('disciplinePills');
+let activeDiscipline = 'synbio';
+
+function renderDiscipline(key){
+  activeDiscipline = key;
+  const d = disciplinesData[key];
+  document.getElementById('disciplineTitle').textContent = d.label;
+  [...disciplinePills.children].forEach(c=> c.classList.toggle('selected', c.dataset.key===key));
+  layerList.innerHTML = '';
+  d.layers.forEach(l=>{
+    const div = document.createElement('div');
+    div.className = 'layer-item';
+    div.innerHTML = `<div class="layer-head"><div class="layer-name display">${l.name}</div><div class="layer-meta">${l.meta}</div></div>
+      <div class="layer-body">${l.body}<div class="vocab-row">${l.vocab.map(v=>`<span class="vocab-chip">${v}</span>`).join('')}</div></div>`;
+    div.addEventListener('click', ()=> div.classList.toggle('open'));
+    if(typeof bindCursorHover === 'function') bindCursorHover(div);
+    layerList.appendChild(div);
+  });
+}
+
+Object.keys(disciplinesData).forEach(key=>{
+  const pill = document.createElement('button');
+  pill.className = 'chip mono';
+  pill.dataset.key = key;
+  pill.textContent = disciplinesData[key].label;
+  pill.addEventListener('click', ()=> renderDiscipline(key));
+  if(typeof bindCursorHover === 'function') bindCursorHover(pill);
+  disciplinePills.appendChild(pill);
 });
+renderDiscipline('synbio');
 
 // ===== CONVERGENCE LAB =====
 const labDisciplines = ['AI Safety','Synthetic Bio','Quantum Comp.','Climate Eng.','Robotics','Neurotech'];
