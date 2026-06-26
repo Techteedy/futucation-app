@@ -13,7 +13,7 @@
   --line: rgba(155,107,255,0.22); --line-bright: rgba(0,240,255,0.55);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; position:relative; }
+body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; position:relative; display:flex; flex-direction:column; }
 .mono{font-family:'JetBrains Mono',monospace;} .display{font-family:'Space Grotesk',sans-serif;}
 
 #particleCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; }
@@ -23,7 +23,7 @@ body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; m
 @keyframes drift1{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(6vw,7vh);} }
 @keyframes drift2{ 0%,100%{transform:translate(0,0);} 50%{transform:translate(-6vw,-5vh);} }
 
-.wrap{ position:relative; z-index:2; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:40px 5vw; }
+.wrap{ position:relative; z-index:2; flex:1; display:flex; align-items:center; justify-content:center; padding:60px 5vw 30px; }
 .card{
   width:100%; max-width:420px; background:linear-gradient(160deg, var(--panel), var(--panel2));
   border:1px solid rgba(155,107,255,0.2); border-radius:20px; padding:44px 38px; position:relative; overflow:hidden;
@@ -61,7 +61,7 @@ input:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,240,255,0.1);
 .msg.error{ color:#ff6b81; } .msg.success{ color:var(--bio); }
 .foot-link{ text-align:center; margin-top:24px; font-size:0.82rem; color:var(--muted); }
 .foot-link a{ color:var(--cyan); text-decoration:none; cursor:pointer; }
-.page-footer{ position:fixed; bottom:0; left:0; right:0; text-align:center; padding:14px 0; font-size:0.7rem; color:var(--muted); font-family:'JetBrains Mono',monospace; z-index:2; opacity:0.75; }
+.page-footer{ position:relative; flex-shrink:0; text-align:center; padding:16px 0 22px; font-size:0.7rem; color:var(--muted); font-family:'JetBrains Mono',monospace; z-index:2; opacity:0.75; }
 </style>
 </head>
 <body>
