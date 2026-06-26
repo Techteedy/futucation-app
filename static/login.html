@@ -84,15 +84,15 @@ input:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(0,240,255,0.1);
     <form id="authForm" onsubmit="return handleSubmit(event)">
       <div class="field" id="nameField">
         <label>FULL NAME</label>
-        <input type="text" id="fullName" placeholder="Zara Adekunle">
+        <input type="text" id="fullName" placeholder="Zara Adekunle" autocapitalize="words" autocomplete="name">
       </div>
       <div class="field">
         <label>EMAIL</label>
-        <input type="email" id="email" placeholder="you@example.com" required>
+        <input type="email" id="email" placeholder="you@example.com" required autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="email">
       </div>
       <div class="field">
         <label>PASSWORD</label>
-        <input type="password" id="password" placeholder="••••••••" required minlength="6">
+        <input type="password" id="password" placeholder="••••••••" required minlength="6" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="current-password">
       </div>
       <button class="submit-btn" id="submitBtn" type="submit">Sign In →</button>
       <div class="msg" id="formMsg"></div>
@@ -130,8 +130,8 @@ async function handleSubmit(e){
   const btn = document.getElementById('submitBtn');
   const msg = document.getElementById('formMsg');
   msg.className = 'msg'; msg.textContent = '';
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value;
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value.trim();
   const fullName = document.getElementById('fullName').value.trim();
 
   btn.disabled = true; btn.textContent = 'Please wait…';
