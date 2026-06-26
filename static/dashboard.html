@@ -28,7 +28,7 @@ body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; m
 .sidebar{
   width:260px; flex-shrink:0; background:rgba(10,13,28,0.7); backdrop-filter:blur(14px);
   border-right:1px solid rgba(155,107,255,0.15); display:flex; flex-direction:column; padding:26px 18px;
-  position:sticky; top:0; height:100vh;
+  position:sticky; top:0; height:100vh; overflow-y:auto;
 }
 .logo{ display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:0.06em; font-size:0.95rem; padding:0 8px 28px; }
 .logo-mark{ width:10px; height:10px; border-radius:50%; background:var(--cyan); box-shadow:0 0 12px var(--cyan),0 0 28px var(--cyan); animation:pulseMark 2.2s ease-in-out infinite; }
@@ -53,7 +53,12 @@ body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; m
 .signout-btn:hover{ border-color:#ff6b81; color:#ff6b81; }
 
 .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.topbar{ display:flex; align-items:center; justify-content:space-between; padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.topbar{ display:flex; align-items:center; justify-content:space-between; padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.05); gap:16px; }
+.topbar-left{ display:flex; align-items:center; gap:16px; }
+.hamburger{ display:none; flex-direction:column; gap:4px; background:none; border:none; cursor:pointer; padding:6px; }
+.hamburger span{ width:20px; height:2px; background:var(--text); border-radius:2px; }
+.sidebar-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:90; }
+.sidebar-backdrop.show{ display:block; }
 .page-title{ font-family:'Space Grotesk',sans-serif; font-size:1.3rem; font-weight:600; }
 .xp-pill{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--bio); border:1px solid rgba(57,255,157,0.3); padding:7px 14px; border-radius:100px; background:rgba(57,255,157,0.06); }
 .content{ flex:1; padding:36px; }
@@ -141,10 +146,19 @@ input:focus{ border-color:var(--cyan); }
 .save-btn{ padding:12px 24px; border-radius:10px; border:none; background:var(--text); color:#070a14; font-weight:600; font-size:0.85rem; cursor:pointer; margin-top:6px; }
 
 @media (max-width:880px){
-  .sidebar{ position:fixed; left:-280px; transition:left .3s; z-index:100; }
-  .sidebar.open{ left:0; }
+  .sidebar{ position:fixed; left:-280px; transition:left .3s; z-index:100; width:78vw; max-width:300px; }
+  .sidebar.open{ left:0; box-shadow:20px 0 60px rgba(0,0,0,0.5); }
+  .hamburger{ display:flex; }
   .overview-grid, .tier-grid, .lab-grid{ grid-template-columns:1fr; }
-  .content{ padding:24px 18px; } .topbar{ padding:18px 18px; }
+  .content{ padding:20px 16px; } .topbar{ padding:16px 16px; }
+  .page-title{ font-size:1.05rem; }
+  .xp-pill{ font-size:0.7rem; padding:6px 10px; }
+  .card{ padding:22px 18px; }
+  .welcome-line{ font-size:1.25rem; }
+  .progress-row{ flex-wrap:wrap; gap:14px; }
+  .mini-stat{ flex:1 1 45%; }
+  .radar-wrap{ max-width:220px; }
+  .profile-row{ flex-wrap:wrap; }
 }
 </style>
 </head>
@@ -189,10 +203,14 @@ input:focus{ border-color:var(--cyan); }
       <button class="signout-btn" onclick="signOut()">Sign Out</button>
     </div>
   </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <div class="main">
     <div class="topbar">
-      <div class="page-title display" id="pageTitle">Overview</div>
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburgerBtn" aria-label="Open menu"><span></span><span></span><span></span></button>
+        <div class="page-title display" id="pageTitle">Overview</div>
+      </div>
       <div class="xp-pill">⚡ <span id="xpCount">0</span> XP</div>
     </div>
 
@@ -356,9 +374,22 @@ function showView(name){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===name));
   document.getElementById('pageTitle').textContent = titles[name] || name;
   document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarBackdrop').classList.remove('show');
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(item=>{
   item.addEventListener('click', ()=> showView(item.dataset.view));
+});
+
+// ===== MOBILE SIDEBAR TOGGLE =====
+const sidebarEl = document.getElementById('sidebar');
+const backdropEl = document.getElementById('sidebarBackdrop');
+document.getElementById('hamburgerBtn').addEventListener('click', ()=>{
+  sidebarEl.classList.add('open');
+  backdropEl.classList.add('show');
+});
+backdropEl.addEventListener('click', ()=>{
+  sidebarEl.classList.remove('open');
+  backdropEl.classList.remove('show');
 });
 
 // ===== RADAR (overview, small) =====
