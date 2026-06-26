@@ -13,7 +13,23 @@
   --line: rgba(155,107,255,0.22); --line-bright: rgba(0,240,255,0.55);
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; }
+body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; cursor:none; }
+@media (pointer:coarse){ body{cursor:auto;} #cursorDot,#cursorRing{display:none;} }
+input, textarea{ cursor:text; }
+a, button, .chip, .nav-item, .tier-card, .layer-item{ cursor:none; }
+@media (pointer:coarse){ a, button, .chip, .nav-item, .tier-card, .layer-item{ cursor:pointer; } }
+
+#cursorDot, #cursorRing{ position:fixed; top:0; left:0; pointer-events:none; z-index:9999; border-radius:50%; transform:translate(-50%,-50%); will-change:transform; }
+#cursorDot{ width:6px; height:6px; background:var(--cyan); box-shadow:0 0 10px var(--cyan); }
+#cursorRing{ width:32px; height:32px; border:1px solid rgba(0,240,255,0.45); transition:width .25s,height .25s,border-color .25s,background .25s; }
+#cursorRing.hover{ width:54px; height:54px; background:rgba(0,240,255,0.08); border-color:var(--magenta); }
+
+.grain{ position:fixed; inset:-50%; z-index:1; pointer-events:none; opacity:0.04; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grainShift 1s steps(4) infinite; }
+@keyframes grainShift{ 0%{transform:translate(0,0);} 25%{transform:translate(-2%,2%);} 50%{transform:translate(2%,-1%);} 75%{transform:translate(-1%,-2%);} 100%{transform:translate(0,0);} }
+
+.magnetic{ display:inline-block; will-change:transform; }
 .mono{font-family:'JetBrains Mono',monospace;} .display{font-family:'Space Grotesk',sans-serif;}
 
 #particleCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.6; }
@@ -62,17 +78,26 @@ body{ background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; m
 .page-title{ font-family:'Space Grotesk',sans-serif; font-size:1.3rem; font-weight:600; }
 .xp-pill{ font-family:'JetBrains Mono',monospace; font-size:0.78rem; color:var(--bio); border:1px solid rgba(57,255,157,0.3); padding:7px 14px; border-radius:100px; background:rgba(57,255,157,0.06); }
 .content{ flex:1; padding:36px; }
-.view{ display:none; } .view.active{ display:block; animation:fadeIn .5s ease; }
-@keyframes fadeIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+.view{ display:none; } .view.active{ display:block; animation:fadeIn .55s cubic-bezier(.16,1,.3,1); }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(14px) scale(0.985); filter:blur(4px);} to{opacity:1; transform:translateY(0) scale(1); filter:blur(0);} }
 
 footer.app-footer{ padding:18px 36px; text-align:center; border-top:1px solid rgba(255,255,255,0.05); }
 .footer-copyright{ color:var(--muted); font-size:0.72rem; font-family:'JetBrains Mono',monospace; opacity:0.8; }
 
 /* ===== OVERVIEW ===== */
 .overview-grid{ display:grid; grid-template-columns:1.1fr 0.9fr; gap:24px; }
-.card{ background:linear-gradient(160deg, var(--panel), var(--panel2)); border:1px solid rgba(155,107,255,0.16); border-radius:18px; padding:28px; position:relative; overflow:hidden; }
+.card{ background:linear-gradient(160deg, var(--panel), var(--panel2)); border:1px solid rgba(155,107,255,0.16); border-radius:18px; padding:28px; position:relative; overflow:hidden; transform-style:preserve-3d; transition:transform .15s ease, box-shadow .3s; }
+.card.tilt-hover:hover{ box-shadow:0 20px 50px rgba(0,240,255,0.12); }
 .card::after{ content:""; position:absolute; inset:0; border-radius:18px; padding:1px; background:linear-gradient(135deg, rgba(0,240,255,0.25), transparent 40%, rgba(155,107,255,0.2)); -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; }
-.welcome-line{ font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:600; margin-bottom:8px; }
+.welcome-line{ font-family:'Space Grotesk',sans-serif; font-size:1.5rem; font-weight:600; margin-bottom:8px; transition:text-shadow .2s; }
+.welcome-line:hover{ animation:glitchText .4s steps(2) infinite; }
+.page-title:hover{ animation:glitchText .4s steps(2) infinite; }
+@keyframes glitchText{
+  0%,100%{ text-shadow:none; transform:translate(0,0); }
+  25%{ text-shadow:-2px 0 var(--cyan), 2px 0 var(--magenta); transform:translate(-1px,0); }
+  50%{ text-shadow:2px 0 var(--cyan), -2px 0 var(--magenta); transform:translate(1px,0); }
+  75%{ text-shadow:-1px 0 var(--violet), 1px 0 var(--cyan); transform:translate(0,0); }
+}
 .welcome-sub{ color:var(--muted); font-size:0.92rem; margin-bottom:24px; }
 .progress-row{ display:flex; gap:16px; margin-top:10px; }
 .mini-stat{ flex:1; }
@@ -86,7 +111,8 @@ footer.app-footer{ padding:18px 36px; text-align:center; border-top:1px solid rg
 .spin{ animation:spin linear infinite; } .spin-rev{ animation:spinRev linear infinite; }
 @keyframes spin{ from{transform:translate(-50%,-50%) rotate(0deg);} to{transform:translate(-50%,-50%) rotate(360deg);} }
 @keyframes spinRev{ from{transform:translate(-50%,-50%) rotate(360deg);} to{transform:translate(-50%,-50%) rotate(0deg);} }
-.core{ position:absolute; top:50%; left:50%; width:50px; height:50px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle at 35% 30%, #1a2440, #060914 70%); border:1px solid var(--line-bright); box-shadow:0 0 30px rgba(0,240,255,0.25); display:flex; align-items:center; justify-content:center; font-size:0.45rem; color:var(--cyan); text-align:center; font-family:'JetBrains Mono',monospace; }
+.core{ position:absolute; top:50%; left:50%; width:50px; height:50px; transform:translate(-50%,-50%); border-radius:50%; background:radial-gradient(circle at 35% 30%, #1a2440, #060914 70%); border:1px solid var(--line-bright); box-shadow:0 0 30px rgba(0,240,255,0.25); display:flex; align-items:center; justify-content:center; font-size:0.45rem; color:var(--cyan); text-align:center; font-family:'JetBrains Mono',monospace; animation:corePulse 4s ease-in-out infinite; }
+@keyframes corePulse{ 0%,100%{box-shadow:0 0 30px rgba(0,240,255,0.25);} 50%{box-shadow:0 0 50px rgba(0,240,255,0.5);} }
 .node{ position:absolute; transform:translate(-50%,-50%); }
 .node-dot{ width:8px; height:8px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan); animation:nodePulse 3s ease-in-out infinite; }
 .node.bio .node-dot{ background:var(--bio); box-shadow:0 0 10px var(--bio); }
@@ -101,7 +127,7 @@ footer.app-footer{ padding:18px 36px; text-align:center; border-top:1px solid rg
 .tier-card-name{ font-family:'Space Grotesk',sans-serif; font-size:1.2rem; font-weight:600; margin-bottom:8px; }
 .tier-card-desc{ font-size:0.83rem; color:var(--muted); line-height:1.5; }
 .tier-bar{ height:4px; border-radius:4px; background:rgba(255,255,255,0.08); margin-top:14px; overflow:hidden; }
-.tier-bar-fill{ height:100%; border-radius:4px; background:linear-gradient(90deg,var(--cyan),var(--violet)); }
+.tier-bar-fill{ height:100%; border-radius:4px; background:linear-gradient(90deg,var(--cyan),var(--violet)); width:0%; transition:width 1.1s cubic-bezier(.16,1,.3,1); box-shadow:0 0 10px rgba(0,240,255,0.4); }
 
 /* tier detail page */
 .tier-feats{ display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
@@ -164,7 +190,10 @@ input:focus{ border-color:var(--cyan); }
 </head>
 <body>
 
+<div id="cursorDot"></div>
+<div id="cursorRing"></div>
 <canvas id="particleCanvas"></canvas>
+<div class="grain"></div>
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 
@@ -228,10 +257,10 @@ input:focus{ border-color:var(--cyan); }
               <div class="mini-stat"><div class="mini-stat-num">0</div><div class="mini-stat-label">Credentials Earned</div></div>
             </div>
             <div class="tier-grid">
-              <div class="card tier-card" onclick="showView('explorer')"><div class="tier-card-age mono">5–12 · EXPLORER</div><div class="tier-card-name display">Spark curiosity</div><div class="tier-card-desc">Animated worlds & gamified quests.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:35%"></div></div></div>
-              <div class="card tier-card" onclick="showView('navigator')"><div class="tier-card-age mono">13–18 · NAVIGATOR</div><div class="tier-card-name display">Chart direction</div><div class="tier-card-desc">Discipline sprints & mentor match.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:0%"></div></div></div>
-              <div class="card tier-card" onclick="showView('pioneer')"><div class="tier-card-age mono">19–35 · PIONEER</div><div class="tier-card-name display">Lead change</div><div class="tier-card-desc">Deep tracks & Convergence Certs.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:0%"></div></div></div>
-              <div class="card tier-card" onclick="showView('sage')"><div class="tier-card-age mono">35+ · SAGE</div><div class="tier-card-name display">Transfer wisdom</div><div class="tier-card-desc">Reskill intensives & mentorship.</div><div class="tier-bar"><div class="tier-bar-fill" style="width:0%"></div></div></div>
+              <div class="card tier-card" onclick="showView('explorer')"><div class="tier-card-age mono">5–12 · EXPLORER</div><div class="tier-card-name display">Spark curiosity</div><div class="tier-card-desc">Animated worlds & gamified quests.</div><div class="tier-bar"><div class="tier-bar-fill" data-fill="35"></div></div></div>
+              <div class="card tier-card" onclick="showView('navigator')"><div class="tier-card-age mono">13–18 · NAVIGATOR</div><div class="tier-card-name display">Chart direction</div><div class="tier-card-desc">Discipline sprints & mentor match.</div><div class="tier-bar"><div class="tier-bar-fill" data-fill="0"></div></div></div>
+              <div class="card tier-card" onclick="showView('pioneer')"><div class="tier-card-age mono">19–35 · PIONEER</div><div class="tier-card-name display">Lead change</div><div class="tier-card-desc">Deep tracks & Convergence Certs.</div><div class="tier-bar"><div class="tier-bar-fill" data-fill="0"></div></div></div>
+              <div class="card tier-card" onclick="showView('sage')"><div class="tier-card-age mono">35+ · SAGE</div><div class="tier-card-name display">Transfer wisdom</div><div class="tier-card-desc">Reskill intensives & mentorship.</div><div class="tier-bar"><div class="tier-bar-fill" data-fill="0"></div></div></div>
             </div>
           </div>
           <div class="card">
@@ -342,7 +371,7 @@ async function init(){
   document.getElementById('profEmail').textContent = currentUser.email;
   document.getElementById('profAvatar').textContent = name[0].toUpperCase();
   document.getElementById('editName').value = name;
-  document.getElementById('xpCount').textContent = currentUser.xp_points || 0;
+  animateXP(currentUser.xp_points || 0);
 }
 init();
 
@@ -478,6 +507,56 @@ function renderLab(){
   }
 }
 buildLab(); window.addEventListener('resize', buildLab);
+
+// ===== CUSTOM CURSOR =====
+const cDot = document.getElementById('cursorDot'), cRing = document.getElementById('cursorRing');
+let cmx=innerWidth/2, cmy=innerHeight/2, crx=cmx, cry=cmy;
+window.addEventListener('mousemove', e=>{ cmx=e.clientX; cmy=e.clientY; cDot.style.left=cmx+'px'; cDot.style.top=cmy+'px'; });
+(function loopCursorRing(){ crx += (cmx-crx)*0.18; cry += (cmy-cry)*0.18; cRing.style.left=crx+'px'; cRing.style.top=cry+'px'; requestAnimationFrame(loopCursorRing); })();
+function bindCursorHover(el){
+  el.addEventListener('mouseenter', ()=>cRing.classList.add('hover'));
+  el.addEventListener('mouseleave', ()=>cRing.classList.remove('hover'));
+}
+document.querySelectorAll('a, button, .chip, .nav-item, .tier-card, .layer-item').forEach(bindCursorHover);
+
+// ===== MAGNETIC BUTTONS =====
+function bindMagnetic(el){
+  el.addEventListener('mousemove', e=>{
+    const r = el.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width/2, y = e.clientY - r.top - r.height/2;
+    el.style.transform = `translate(${x*0.25}px, ${y*0.3}px)`;
+  });
+  el.addEventListener('mouseleave', ()=>{ el.style.transition='transform .35s ease'; el.style.transform='translate(0,0)'; setTimeout(()=>el.style.transition='',350); });
+}
+document.querySelectorAll('.sprint-btn, .save-btn, .signout-btn').forEach(bindMagnetic);
+
+// ===== 3D TILT ON CARDS =====
+document.querySelectorAll('.card').forEach(card=>{
+  card.classList.add('tilt-hover');
+  card.addEventListener('mousemove', e=>{
+    const r = card.getBoundingClientRect();
+    const px = (e.clientX-r.left)/r.width-0.5, py = (e.clientY-r.top)/r.height-0.5;
+    card.style.transform = `rotateY(${px*6}deg) rotateX(${-py*6}deg)`;
+  });
+  card.addEventListener('mouseleave', ()=>{ card.style.transform='rotateY(0) rotateX(0)'; });
+});
+
+// ===== ANIMATE PROGRESS BARS IN =====
+function animateProgressBars(){
+  document.querySelectorAll('.tier-bar-fill').forEach(bar=>{
+    const target = bar.dataset.fill || 0;
+    requestAnimationFrame(()=>{ bar.style.width = target + '%'; });
+  });
+}
+setTimeout(animateProgressBars, 300);
+
+// ===== XP COUNT-UP =====
+function animateXP(target){
+  let cur = 0;
+  const step = Math.max(1, Math.round(target/30));
+  const tick = ()=>{ cur = Math.min(target, cur+step); document.getElementById('xpCount').textContent = cur; if(cur<target) requestAnimationFrame(tick); };
+  if(target>0) tick();
+}
 
 // ===== BACKGROUND PARTICLES =====
 const canvas = document.getElementById('particleCanvas'), ctx = canvas.getContext('2d');
